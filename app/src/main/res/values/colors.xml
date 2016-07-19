@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="afetch_blue">#5287ae</color>
+    <color name="afetch_lightgrey">#FFE7E7E7</color>
+    <color name="afetch_darkgrey">#FF333333</color>
+    <color name="afetch_red">#55FFC0CB</color>
+</resources>

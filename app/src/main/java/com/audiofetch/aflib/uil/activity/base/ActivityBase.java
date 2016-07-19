@@ -1,0 +1,563 @@
+package com.audiofetch.aflib.uil.activity.base;
+
+import android.app.AlertDialog;
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
+
+import android.app.ActionBar;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.os.Handler;
+import android.preference.PreferenceManager;
+
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.FrameLayout;
+
+import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu;
+import com.jeremyfeinstein.slidingmenu.lib.app.SlidingFragmentActivity;
+import com.squareup.otto.Bus;
+import com.audiofetch.aflib.R;
+import com.audiofetch.afaudiolib.bll.app.ApplicationBase;
+import com.audiofetch.afaudiolib.bll.event.ChannelChangedEvent;
+import com.audiofetch.afaudiolib.bll.event.EventBus;
+import com.audiofetch.afaudiolib.bll.helpers.LG;
+import com.audiofetch.aflib.uil.activity.ExitActivity;
+import com.audiofetch.aflib.uil.fragment.menu.SlidingMenuFragment;
+
+import android.annotation.TargetApi;
+import android.widget.ImageView;
+import android.widget.Toast;
+
+
+/**
+ * Base activity for AF app, contains all the boilerplate code
+ */
+public class ActivityBase extends SlidingFragmentActivity {
+
+    /*==============================================================================================
+    // DATA MEMBERS
+    //============================================================================================*/
+
+    public static final String TAG = ActivityBase.class.getSimpleName();
+
+    public static final int MAIN_CONTAINER_RESID = R.id.main_container;
+
+    protected static Bus mEventBus;
+
+    protected FragmentManager mFragManager;
+    protected ProgressDialog mProgressDialog;
+    protected Handler mUiHandler;
+    protected SlidingMenu mSlidingMenu;
+    protected SlidingMenuFragment mSlidingMenuFragment;
+
+    protected boolean mIsRunning;
+    protected FrameLayout mMainContainer;
+    protected String appTitle;
+
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+//    private GoogleApiClient client;
+
+    /*==============================================================================================
+    // STATIC METHODS
+    //============================================================================================*/
+
+    public static Bus getBus() {
+        if (null == mEventBus) {
+            mEventBus = EventBus.get();
+        }
+        return mEventBus;
+    }
+
+    /*==============================================================================================
+    // OVERRIDES
+    //============================================================================================*/
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // init preferences
+        PreferenceManager.setDefaultValues(this, R.xml.fragment_settings, false);
+
+        // handler, bus and frag manager
+        mUiHandler = new Handler();
+        mEventBus = getBus();
+        mFragManager = getFragmentManager();
+
+        // config window with an action bar and a progress spinner in top left corner (hidden)
+        final Window win = getWindow();
+        win.requestFeature(Window.FEATURE_ACTION_BAR);
+        win.requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+        win.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        // configure action bar
+        ActionBar ab = getActionBar();
+        ab.setDisplayShowTitleEnabled(false);
+        ab.setDisplayHomeAsUpEnabled(false); // show back arrow
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+            enableHomeButton();
+        }
+
+        @SuppressWarnings("deprecation")
+        ActionBar.LayoutParams layout = new ActionBar.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT);
+        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        final View customActionBarView = inflater.inflate(R.layout.actionbar_custom, null);
+        ab.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
+        ab.setCustomView(customActionBarView, layout);
+
+        appTitle = getString(R.string.actionbar_title);
+        showActionProgress(true);
+        mUiHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                showActionProgress(false);
+            }
+        }, 1500);
+
+        try {
+            // assign content view and sliding menu view
+            setContentView(R.layout.main_fragment_container);
+            setBehindContentView(R.layout.fragment_menu);
+
+            mMainContainer = (FrameLayout) findViewById(R.id.main_container);
+
+            // potential fix for startup crash on 6.x
+            mMainContainer.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+
+            // setup side menu
+            setupSlidingMenu();
+        } catch(Exception ex) {
+            LG.Error(TAG, "UNKNOWN ERRROR: ", ex);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mEventBus.register(this);
+        mUiHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mEventBus.post(new ChannelChangedEvent(0));
+            }
+        }, 1010);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mIsRunning = true;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mIsRunning = false;
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mEventBus.unregister(this);
+        dismissProgress();
+    }
+
+    /**
+     * User pressed back on device
+     */
+    @Override
+    public void onBackPressed() {
+        if (!mSlidingMenuFragment.isShowingPlayer()) {
+            mSlidingMenuFragment.selectMenuItem(SlidingMenuFragment.PLAYER, false);
+            return;
+        }
+        this.exitApplicationClearHistory();
+    }
+
+    @Override
+    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        final int itemId = item.getItemId();
+        switch (itemId) {
+            case android.R.id.home: {
+                if (mSlidingMenuFragment.isShowingPlayer()) {
+                    toggle();
+                    return true;
+                } else {
+                    onBackPressed();
+                    return true;
+                }
+            }
+        }
+        return super.onMenuItemSelected(featureId, item);
+    }
+
+    /*==============================================================================================
+    // INSTANCE METHODS
+    //============================================================================================*/
+
+    /**
+     * Turns on/off the back arrow in the actionbar
+     *
+     * @param visible
+     * @return
+     */
+    public ActivityBase toggleBackArrow(final boolean visible) {
+        getActionBar().setDisplayHomeAsUpEnabled(visible);
+        return this;
+    }
+
+    /**
+     * Set the action bar title
+     *
+     * @param title
+     */
+    public void setTitle(final String title) {
+        getActionBar().setTitle(title);
+    }
+
+    /**
+     * Toggles the spinner in the action bar
+     *
+     * @param showing
+     */
+    public void showActionProgress(final boolean showing) {
+        setProgressBarIndeterminate(showing);
+        setProgressBarIndeterminateVisibility(showing);
+    }
+
+    /**
+     * Returns the handler
+     *
+     * @return
+     */
+    public Handler getHandler() {
+        if (null == mUiHandler) mUiHandler = new Handler();
+        return mUiHandler;
+    }
+
+    /**
+     * Post delayed to handler
+     *
+     * @param runnable
+     * @param delayMs
+     */
+    public void afterDelay(final Runnable runnable, final int delayMs) {
+        getHandler().postDelayed(runnable, delayMs);
+    }
+
+    /**
+     * Stops the app cleanly
+     */
+    public void exitApplicationClearHistory() {
+        showDeviceHomeScreen();
+        ExitActivity.exitAppWithRemoveFromRecent(this); // start exit activity
+        ApplicationBase.killApp();
+    }
+
+    /**
+     * Shows an confirm dialog, think javascript:window.confirm
+     *
+     * @param titleResId
+     * @param msgResId
+     * @param positiveCallback
+     * @param negativeListener
+     */
+    public void confirmDialog(final int titleResId, final int msgResId, final DialogInterface.OnClickListener positiveCallback, final DialogInterface.OnClickListener negativeListener) {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle(titleResId)
+                .setMessage(msgResId)
+                .setPositiveButton(R.string.yes, positiveCallback)
+                .setNegativeButton(R.string.no, negativeListener);
+        builder.create().show();
+    }
+
+    /**
+     * Shows a toast window for duration
+     *
+     * @param msg
+     * @param duration
+     */
+    public void makeToast(final String msg, final int duration) {
+        final int dur = (Toast.LENGTH_SHORT == duration) ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
+        Toast.makeText(this, msg, dur).show();
+    }
+
+    /**
+     * Shows a toast window for duration
+     *
+     * @param msgResId
+     * @param duration
+     */
+    public void makeToast(final int msgResId, final int duration) {
+        final int dur = (Toast.LENGTH_SHORT == duration) ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
+        Toast.makeText(this, msgResId, dur).show();
+    }
+
+    /**
+     * Shows toast for duration of seconds
+     *
+     * @param msg      The message to show in the toast
+     * @param duration The duration in seconds
+     */
+    public void toastFor(final String msg, final int duration) {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (duration > 2) {
+                    final Toast toasty = Toast.makeText(ActivityBase.this, msg, Toast.LENGTH_SHORT);
+                    toasty.show();
+                    int durationSeconds = (duration * 1000);
+                    new CountDownTimer(durationSeconds, 1000) {
+                        @Override
+                        public void onTick(long l) {
+                            toasty.show();
+                        }
+
+                        @Override
+                        public void onFinish() {
+                            toasty.show();
+                        }
+                    }.start();
+                } else {
+                    Toast.makeText(ActivityBase.this, msg, Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    /**
+     * Shows the progress dialog with the given message
+     *
+     * @param msg
+     */
+    public void showProgress(final String msg) {
+        if (null != msg) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (null == mProgressDialog) {
+                        mProgressDialog = ProgressDialog.show(ActivityBase.this, msg, null, true, false);
+                    } else {
+                        mProgressDialog.setTitle(msg);
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Hides the progress dialog
+     */
+    public void dismissProgress() {
+        if (mProgressDialog != null) {
+            mProgressDialog.dismiss();
+        }
+        mProgressDialog = null;
+    }
+
+    /*=======================================================
+    // FRAGMENT SUPPORT
+    //=====================================================*/
+
+    /**
+     * Clears the backstack
+     */
+    public void clearBackstack() {
+        if (null != mFragManager) {
+            try {
+                mFragManager.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    public void switchContent(final Fragment newContent, final String title, final String tag, boolean toggle) {
+        if (toggle) {
+            toggle(); // hide menu first
+        }
+        showActionProgress(true);
+
+        if (null != title && !title.isEmpty()) {
+            setTitle(title);
+        } else {
+            setTitle(null);
+        }
+
+        // then show fragment after menu animation
+        final CountDownTimer tmr = new CountDownTimer(550, 1) {
+            @Override
+            public void onTick(long l) {}
+
+            @Override
+            public void onFinish() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // give the fragment a few to display before hiding window progress
+                        final CountDownTimer t = new CountDownTimer(150, 1) {
+                            @Override
+                            public void onTick(long l) {
+
+                            }
+
+                            @Override
+                            public void onFinish() {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        showActionProgress(false);
+                                    }
+                                });
+                            }
+                        };
+
+                        if (mIsRunning) {
+                            final int backstackCount = mFragManager.getBackStackEntryCount();
+                            final boolean isShowingPlayer = (1 == backstackCount);
+                            if (backstackCount > 0 && !isShowingPlayer) {
+                                popFragmentBackStack();
+                            } else {
+                                pushFragment(newContent, tag, true);
+                            }
+                            t.start();
+                        }
+                    }
+                });
+            }
+        };
+        tmr.start();
+    }
+
+    /**
+     * Switches the content
+     *
+     * @param newContent
+     * @param tag
+     * @param toggle
+     */
+    public void switchContent(final Fragment newContent, final String tag, boolean toggle) {
+        switchContent(newContent, "", tag, toggle);
+    }
+
+    /**
+     * Pushes a fragment onto the stack
+     *
+     * @param fragment
+     * @param tag
+     * @param addToBackstack
+     */
+    public void pushFragment(final Fragment fragment, final String tag, final boolean addToBackstack) {
+        FragmentTransaction ft = mFragManager.beginTransaction();
+        ft.replace(MAIN_CONTAINER_RESID, fragment);
+        if (addToBackstack) {
+            ft.addToBackStack(tag);
+        }
+        ft.commit();
+        updateActionBar();
+    }
+
+    /**
+     * Updates the actionbar
+     */
+    public void updateActionBar() {
+        final ActionBar ab = getActionBar();
+        if (mSlidingMenuFragment.isShowingPlayer()) {
+            ab.setDisplayHomeAsUpEnabled(false);
+            ab.setDisplayShowHomeEnabled(true);
+        } else {
+            ab.setDisplayHomeAsUpEnabled(true);
+            ab.setDisplayShowHomeEnabled(true);
+        }
+    }
+
+    /**
+     * Pops the fragment from the backstack
+     *
+     * @return
+     */
+    public boolean popFragmentBackStack() {
+        boolean result = false;
+        if (mFragManager.getBackStackEntryCount() > 0) {
+            mFragManager.popBackStack();
+            result = true;
+        }
+        return result;
+    }
+
+    /**
+     * Indicates whether the side, slide-out menu is showing
+     *
+     * @return
+     */
+    public boolean isSlidingMenuVisible() {
+        final boolean isShowing = (null != mSlidingMenu && mSlidingMenu.isMenuShowing()) ? true : false;
+        return isShowing;
+    }
+
+    /**
+     * initialize the sliding menu
+     */
+    protected void setupSlidingMenu() {
+        if (null != findViewById(R.id.menu_frame)) {
+            try {
+                mSlidingMenuFragment = new SlidingMenuFragment();
+                FragmentTransaction t = mFragManager.beginTransaction();
+                t.replace(R.id.menu_frame, mSlidingMenuFragment, SlidingMenuFragment.TAG);
+                t.commit();
+
+                // calculate the behind offset so the menu width is always 300 dp
+                final DisplayMetrics metrics = new DisplayMetrics();
+                getWindowManager().getDefaultDisplay().getMetrics(metrics);
+                int px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 300, metrics);
+                px = metrics.widthPixels - px;
+
+                mSlidingMenu = getSlidingMenu();
+                if (null != mSlidingMenu) {
+                    mSlidingMenu.setEnabled(false);
+                    mSlidingMenu.setVisibility(View.VISIBLE);
+                    mSlidingMenu.setMode(SlidingMenu.LEFT);
+                    mSlidingMenu.setBehindOffsetRes(R.dimen.slidingmenu_offset);
+                    mSlidingMenu.setFadeDegree(0.35f);
+                    mSlidingMenu.setSelectorEnabled(true);
+                    mSlidingMenu.setBehindOffset(px);
+                    mSlidingMenu.setSlidingEnabled(true);
+                    mSlidingMenu.setTouchModeAbove(SlidingMenu.TOUCHMODE_NONE);
+                    mSlidingMenu.toggle();
+                }
+                setSlidingActionBarEnabled(true);
+            } catch(Exception ex) {
+                LG.Error(TAG, "FAILED TO SETUP SLIDING MENU:", ex);
+            }
+        }
+    }
+
+    /**
+     * Hides the app, and takes the user to the device's home screen
+     */
+    protected void showDeviceHomeScreen() {
+        ApplicationBase.showDeviceHomeScreen();
+    }
+
+    /**
+     * Enables the home button
+     */
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+    protected void enableHomeButton() {
+        getActionBar().setHomeButtonEnabled(true);
+    }
+}

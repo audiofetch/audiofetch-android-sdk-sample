@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AudioFetch SDK Sample</string>
+
+    <string name="fetching_audio">Fetching Audio&#8230;</string>
+    <string name="actionbar_title"></string>
+
+    <string name="settings">Settings</string>
+
+    <!-- Prefs Screen -->
+    <string name="pref_latency_key">bufferLatency</string>
+    <string name="pref_audio_settings">AUDIO SETTINGS</string>
+    <string name="pref_key_set_buffer">Listening Mode</string>
+    <string name="pref_key_set_buffer_msg">Select Music mode, or TV Audio mode (default).</string>
+    <string name="listening_mode_set">Set listening mode to %1$s&#8230;</string>
+
+
+    <string name="no_connection_msg">A connection was not found.  Please ensure that you are connected to an AudioFetch enabled WiFi network.</string>
+    <string name="spotty_wifi_msg">You have moved out of range of the AudioFetch Express.  Please move closer to the source to continue listening.  You may need to close and restart the app when you are back in range.</string>
+
+    <string name="sapa_fail">Restarting Audio</string>
+
+    <string name="status_nowifi">Device is disconnected from Wifi.  Please check Wifi settings.</string>
+    <string name="status_wifioff">Please turn on your device\&#39;s WiFi.</string>
+    <string name="status_badwifi">Please connect to an AudioFetch-enabled WiFi.</string>
+
+    <string name="label_channel">Channel</string>
+    <string name="label_current_channel">Current Channel:</string>
+    <string name="label_channel_name">Name:</string>
+    <string name="label_volume">Volume</string>
+    <string name="filter_title_view_audiofetch">View AudioFetch</string>
+</resources>

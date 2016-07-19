@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="menu_list">
+        <item>&#160;</item> <!-- logo -->
+        <item>Back</item>
+        <item>Settings</item>
+    </string-array>
+
+    <string name="pref_buffer_default">75</string>
+    <string-array name="pref_buffer_choice_values">
+        <item>75</item>
+        <item>150</item>
+    </string-array>
+    <string-array name="pref_buffer_choice_names">
+        <item>TV Audio</item>
+        <item>Music</item>
+    </string-array>
+</resources>

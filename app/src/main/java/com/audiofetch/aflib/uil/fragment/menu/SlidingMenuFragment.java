@@ -1,10 +1,7 @@
 package com.audiofetch.aflib.uil.fragment.menu;
 
-import android.app.AlertDialog;
-
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.app.Fragment;
 import android.app.ListFragment;
@@ -16,7 +13,6 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.audiofetch.aflib.R;
 import com.audiofetch.aflib.uil.activity.MainActivity;
@@ -24,7 +20,7 @@ import com.audiofetch.aflib.uil.fragment.PlayerFragment;
 import com.audiofetch.aflib.uil.fragment.SettingsFragment;
 
 /**
- * Side menu fragment that replaces the deprecated drawer widget
+ * Side menu fragment
  */
 public class SlidingMenuFragment extends ListFragment {
 
@@ -34,18 +30,13 @@ public class SlidingMenuFragment extends ListFragment {
 
     public static final String TAG = ListFragment.class.getSimpleName();
     public static final int LOGO = 0,
-            PLAYER = 1,
-            SETTINGS = 2,
-            CLOSE = 3;
+                            PLAYER = 1,
+                            SETTINGS = 2;
 
     protected static int mSelectedMenuItem = -1;
 
-    private View mView;
-    private Fragment mNewContent;
-
-    public SlidingMenuFragment() {
-        super();
-    }
+    protected View mView;
+    protected Fragment mNewContent;
 
     /*=======================================================
     // OVERRIDES
@@ -62,12 +53,6 @@ public class SlidingMenuFragment extends ListFragment {
         super.onListItemClick(l, v, position, id);
         Log.i(TAG, "List item clicked " + id);
         selectMenuItem(position);
-    }
-
-    @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        refreshMenu();
     }
 
     @Override
@@ -98,6 +83,11 @@ public class SlidingMenuFragment extends ListFragment {
         selectMenuItem(position, true);
     }
 
+    /**
+     * Returns true if the player is currently the displayed fragment
+     *
+     * @return
+     */
     public boolean isShowingPlayer() {
         return (mSelectedMenuItem == PLAYER);
     }
@@ -138,30 +128,6 @@ public class SlidingMenuFragment extends ListFragment {
                 tag = SettingsFragment.TAG;
                 break;
             }
-            case CLOSE: {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getMainActivity());
-                builder.setTitle(R.string.close_app)
-                        .setMessage(R.string.close_app_msg)
-                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int i) {
-                                dialog.dismiss();
-                                final Toast t = Toast.makeText(getMainActivity(), R.string.exiting_audiofetch, Toast.LENGTH_SHORT);
-                                t.show();
-                                getMainActivity().afterDelay(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        t.cancel();
-                                        getMainActivity().exitApplicationClearHistory();
-                                    }
-                                }, 2500);
-                            }
-                        });
-                builder.setNegativeButton(R.string.no, null);
-                builder.setCancelable(true);
-                builder.show();
-                break;
-            }
             case LOGO:
             default: // nothing to do
                 break;
@@ -172,10 +138,6 @@ public class SlidingMenuFragment extends ListFragment {
             switchFragment(mNewContent, tag, toggle);
             mSelectedMenuItem = position;
         }
-    }
-
-    public int getSelectedMenuItem() {
-        return mSelectedMenuItem;
     }
 
     /**
@@ -246,7 +208,7 @@ public class SlidingMenuFragment extends ListFragment {
     //=====================================================*/
 
     /**
-     * Side menu adapter
+     * Side menu list adapter
      */
     public class MenuAdapter extends ArrayAdapter<MenuInfo> {
 
@@ -286,6 +248,9 @@ public class SlidingMenuFragment extends ListFragment {
         }
     }
 
+    /**
+     * Holder pattern class for MenuAdapter
+     */
     static class ViewHolder {
         final ImageView icon;
         final TextView label;
@@ -296,6 +261,9 @@ public class SlidingMenuFragment extends ListFragment {
         }
     }
 
+    /**
+     * Simple class to store menu info
+     */
     private final class MenuInfo {
         public final String tag;
         public final int iconRes;

@@ -1,6 +1,5 @@
 package com.audiofetch.aflib.uil.activity.base;
 
-import android.app.AlertDialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
@@ -8,7 +7,6 @@ import android.app.FragmentTransaction;
 import android.app.ActionBar;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -24,25 +22,30 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
-import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu;
-import com.jeremyfeinstein.slidingmenu.lib.app.SlidingFragmentActivity;
-import com.squareup.otto.Bus;
 import com.audiofetch.aflib.R;
+import com.audiofetch.aflib.uil.activity.ExitActivity;
+import com.audiofetch.aflib.uil.fragment.menu.SlidingMenuFragment;
+
 import com.audiofetch.afaudiolib.bll.app.ApplicationBase;
 import com.audiofetch.afaudiolib.bll.event.ChannelChangedEvent;
 import com.audiofetch.afaudiolib.bll.event.EventBus;
 import com.audiofetch.afaudiolib.bll.helpers.LG;
-import com.audiofetch.aflib.uil.activity.ExitActivity;
-import com.audiofetch.aflib.uil.fragment.menu.SlidingMenuFragment;
+
+import com.squareup.otto.Bus;
+
+import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu;
+import com.jeremyfeinstein.slidingmenu.lib.app.SlidingFragmentActivity;
 
 import android.annotation.TargetApi;
-import android.widget.ImageView;
-import android.widget.Toast;
+
 
 
 /**
- * Base activity for AF app, contains all the boilerplate code
+ * Base activity for AudioFetch SDK Sample app
+ *
+ * Hides boilerplate code from MainActivity...
  */
 public class ActivityBase extends SlidingFragmentActivity {
 
@@ -58,19 +61,12 @@ public class ActivityBase extends SlidingFragmentActivity {
 
     protected FragmentManager mFragManager;
     protected ProgressDialog mProgressDialog;
-    protected Handler mUiHandler;
+    protected Handler mUiHandler = new Handler();
     protected SlidingMenu mSlidingMenu;
     protected SlidingMenuFragment mSlidingMenuFragment;
 
     protected boolean mIsRunning;
     protected FrameLayout mMainContainer;
-    protected String appTitle;
-
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
-//    private GoogleApiClient client;
 
     /*==============================================================================================
     // STATIC METHODS
@@ -119,7 +115,6 @@ public class ActivityBase extends SlidingFragmentActivity {
         ab.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
         ab.setCustomView(customActionBarView, layout);
 
-        appTitle = getString(R.string.actionbar_title);
         showActionProgress(true);
         mUiHandler.postDelayed(new Runnable() {
             @Override
@@ -245,7 +240,6 @@ public class ActivityBase extends SlidingFragmentActivity {
      * @return
      */
     public Handler getHandler() {
-        if (null == mUiHandler) mUiHandler = new Handler();
         return mUiHandler;
     }
 
@@ -269,20 +263,14 @@ public class ActivityBase extends SlidingFragmentActivity {
     }
 
     /**
-     * Shows an confirm dialog, think javascript:window.confirm
+     * Shows a toast window for duration
      *
-     * @param titleResId
      * @param msgResId
-     * @param positiveCallback
-     * @param negativeListener
+     * @param duration
      */
-    public void confirmDialog(final int titleResId, final int msgResId, final DialogInterface.OnClickListener positiveCallback, final DialogInterface.OnClickListener negativeListener) {
-        final AlertDialog.Builder builder = new AlertDialog.Builder(this)
-                .setTitle(titleResId)
-                .setMessage(msgResId)
-                .setPositiveButton(R.string.yes, positiveCallback)
-                .setNegativeButton(R.string.no, negativeListener);
-        builder.create().show();
+    public void makeToast(final int msgResId, final int duration) {
+        final int dur = (Toast.LENGTH_SHORT == duration) ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
+        Toast.makeText(this, msgResId, dur).show();
     }
 
     /**
@@ -294,17 +282,6 @@ public class ActivityBase extends SlidingFragmentActivity {
     public void makeToast(final String msg, final int duration) {
         final int dur = (Toast.LENGTH_SHORT == duration) ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
         Toast.makeText(this, msg, dur).show();
-    }
-
-    /**
-     * Shows a toast window for duration
-     *
-     * @param msgResId
-     * @param duration
-     */
-    public void makeToast(final int msgResId, final int duration) {
-        final int dur = (Toast.LENGTH_SHORT == duration) ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
-        Toast.makeText(this, msgResId, dur).show();
     }
 
     /**
@@ -386,6 +363,14 @@ public class ActivityBase extends SlidingFragmentActivity {
         }
     }
 
+    /**
+     * Swaps the content in the main view area
+     *
+     * @param newContent
+     * @param title
+     * @param tag
+     * @param toggle
+     */
     public void switchContent(final Fragment newContent, final String title, final String tag, boolean toggle) {
         if (toggle) {
             toggle(); // hide menu first
@@ -401,13 +386,15 @@ public class ActivityBase extends SlidingFragmentActivity {
         // then show fragment after menu animation
         final CountDownTimer tmr = new CountDownTimer(550, 1) {
             @Override
-            public void onTick(long l) {}
+            public void onTick(long l) {
+            }
 
             @Override
             public void onFinish() {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+
                         // give the fragment a few to display before hiding window progress
                         final CountDownTimer t = new CountDownTimer(150, 1) {
                             @Override
@@ -430,7 +417,8 @@ public class ActivityBase extends SlidingFragmentActivity {
                             final int backstackCount = mFragManager.getBackStackEntryCount();
                             final boolean isShowingPlayer = (1 == backstackCount);
                             if (backstackCount > 0 && !isShowingPlayer) {
-                                popFragmentBackStack();
+                                clearBackstack();
+                                pushFragment(newContent, tag, true);
                             } else {
                                 pushFragment(newContent, tag, true);
                             }
@@ -483,20 +471,6 @@ public class ActivityBase extends SlidingFragmentActivity {
             ab.setDisplayHomeAsUpEnabled(true);
             ab.setDisplayShowHomeEnabled(true);
         }
-    }
-
-    /**
-     * Pops the fragment from the backstack
-     *
-     * @return
-     */
-    public boolean popFragmentBackStack() {
-        boolean result = false;
-        if (mFragManager.getBackStackEntryCount() > 0) {
-            mFragManager.popBackStack();
-            result = true;
-        }
-        return result;
     }
 
     /**

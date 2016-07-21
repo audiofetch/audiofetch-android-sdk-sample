@@ -13,6 +13,9 @@ import com.audiofetch.aflib.R;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Adapter for channels GridView
+ */
 public class ChannelGridAdapter extends BaseAdapter {
 
     /*==============================================================================================
@@ -135,7 +138,7 @@ public class ChannelGridAdapter extends BaseAdapter {
     //============================================================================================*/
 
     /**
-     * Holder pattern for adapter
+     * Holder pattern class for adapter
      */
     static class GridItemViewHolder {
         public TextView channelNumber;

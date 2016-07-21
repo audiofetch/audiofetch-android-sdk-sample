@@ -15,11 +15,8 @@
     <string name="listening_mode_set">Set listening mode to %1$s&#8230;</string>
 
 
-    <string name="no_connection_msg">A connection was not found.  Please ensure that you are connected to an AudioFetch enabled WiFi network.</string>
-    <string name="spotty_wifi_msg">You have moved out of range of the AudioFetch Express.  Please move closer to the source to continue listening.  You may need to close and restart the app when you are back in range.</string>
-
-    <string name="sapa_fail">Restarting Audio</string>
-
+    <string name="no_connection_message">A connection was not found.  Please ensure that you are connected to an AudioFetch enabled WiFi network and restart the app.</string>
+    <string name="audio_ready">Audio Ready</string>
     <string name="status_nowifi">Device is disconnected from Wifi.  Please check Wifi settings.</string>
     <string name="status_wifioff">Please turn on your device\&#39;s WiFi.</string>
     <string name="status_badwifi">Please connect to an AudioFetch-enabled WiFi.</string>

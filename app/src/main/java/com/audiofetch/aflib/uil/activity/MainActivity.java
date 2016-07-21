@@ -1,16 +1,11 @@
 package com.audiofetch.aflib.uil.activity;
 
 import com.squareup.otto.Subscribe;
-import android.support.annotation.NonNull;
 
-import android.app.Fragment;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.CountDownTimer;
-import android.support.v4.app.ActivityCompat;
 import android.view.KeyEvent;
 import android.widget.Toast;
 
@@ -19,23 +14,21 @@ import com.google.android.gms.common.api.GoogleApiClient;
 
 import com.audiofetch.afaudiolib.R;
 import com.audiofetch.afaudiolib.bll.colleagues.AudioController;
-import com.audiofetch.afaudiolib.bll.colleagues.base.ControllerBase;
 import com.audiofetch.afaudiolib.bll.event.AudioPreferenceChangeEvent;
 import com.audiofetch.afaudiolib.bll.event.AudioFocusEvent;
-import com.audiofetch.afaudiolib.bll.event.AudioStateEvent;
 import com.audiofetch.afaudiolib.bll.event.AudioTypeEvent;
 import com.audiofetch.afaudiolib.bll.event.ChannelsReceivedEvent;
-import com.audiofetch.afaudiolib.bll.event.DemoModeEvent;
 import com.audiofetch.afaudiolib.bll.event.WifiStatusEvent;
 import com.audiofetch.afaudiolib.bll.helpers.LG;
 import com.audiofetch.afaudiolib.bll.helpers.PREFS;
+
 import com.audiofetch.aflib.uil.activity.base.ActivityBase;
 import com.audiofetch.aflib.uil.fragment.PlayerFragment;
 
 /**
- * Main Activity for AudioFetch app
+ * Main Activity for AudioFetch SDK Sample app
  */
-public class MainActivity extends ActivityBase implements ActivityCompat.OnRequestPermissionsResultCallback {
+public class MainActivity extends ActivityBase {
 
     /*==============================================================================================
     // CONSTANTS
@@ -46,9 +39,6 @@ public class MainActivity extends ActivityBase implements ActivityCompat.OnReque
     /*==============================================================================================
     // DATA MEMBERS
     //============================================================================================*/
-
-    protected boolean mConnectionMsgShown = false;
-    protected boolean mDemoPromptShown = false;
 
     protected AudioController mAudioController;
     protected PlayerFragment mPlayerFragment;
@@ -66,16 +56,11 @@ public class MainActivity extends ActivityBase implements ActivityCompat.OnReque
         if (null != action) {
             Uri data = intent.getData();
             LG.Verbose(TAG, "App started from intent: %s with data: %s", action, data);
-            // TODO: add other deeplinks besides the default
+            // TODO: add other deeplinks besides the default as needed
         }
 
         mAudioController = getAudioController();
         mGoogClient = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
     }
 
     @Override
@@ -86,7 +71,7 @@ public class MainActivity extends ActivityBase implements ActivityCompat.OnReque
             mGoogClient.connect();
         }
         showPlayerFragment();
-        mUiHandler.postDelayed(new Runnable() {
+        afterDelay(new Runnable() {
             @Override
             public void run() {
                 if (!getAudioController().isAudioPlaying()) {
@@ -147,85 +132,6 @@ public class MainActivity extends ActivityBase implements ActivityCompat.OnReque
         super.exitApplicationClearHistory();
     }
 
-    /**
-     * Swaps the content in the main view area
-     *
-     * @param newContent
-     * @param title
-     * @param tag
-     * @param toggle
-     */
-    @Override
-    public void switchContent(final Fragment newContent, final String title, final String tag, boolean toggle) {
-        if (toggle) {
-            toggle(); // hide menu first
-        }
-        showActionProgress(true);
-
-        if (null != title && !title.isEmpty()) {
-            setTitle(title);
-        } else {
-            setTitle(null);
-        }
-
-        // then show fragment after menu animation
-        final CountDownTimer tmr = new CountDownTimer(550, 1) {
-            @Override
-            public void onTick(long l) {
-            }
-
-            @Override
-            public void onFinish() {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-
-                        // give the fragment a few to display before hiding window progress
-                        final CountDownTimer t = new CountDownTimer(150, 1) {
-                            @Override
-                            public void onTick(long l) {
-
-                            }
-
-                            @Override
-                            public void onFinish() {
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        showActionProgress(false);
-                                    }
-                                });
-                            }
-                        };
-
-                        if (mIsRunning) {
-                            final int backstackCount = mFragManager.getBackStackEntryCount();
-                            final boolean isShowingPlayer = (1 == backstackCount);
-                            if (backstackCount > 0 && !isShowingPlayer) {
-                                clearBackstack();
-                                pushFragment(newContent, tag, true);
-                            } else {
-                                pushFragment(newContent, tag, true);
-                            }
-                            t.start();
-                        }
-                    }
-                });
-            }
-        };
-        tmr.start();
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (ControllerBase.REPORT_PERMISSION_ACCESS_COURSE_LOCATION == requestCode && 2 == permissions.length) {
-            final int resId = (PackageManager.PERMISSION_GRANTED == grantResults[0] && PackageManager.PERMISSION_GRANTED == grantResults[1])
-                    ? R.string.location_permission_success : R.string.location_permission_denied;
-            Toast.makeText(this, resId, Toast.LENGTH_LONG).show();
-        }
-    }
-
-
     /*==============================================================================================
     // BUS EVENTS
     //============================================================================================*/
@@ -249,7 +155,7 @@ public class MainActivity extends ActivityBase implements ActivityCompat.OnReque
     @SuppressWarnings("unused")
     @Subscribe
     public void onChannelsReceivedEvent(final ChannelsReceivedEvent event) {
-        mUiHandler.postDelayed(new Runnable() {
+        afterDelay(new Runnable() {
             @Override
             public void run() {
                 dismissProgress();
@@ -258,19 +164,8 @@ public class MainActivity extends ActivityBase implements ActivityCompat.OnReque
     }
 
     /**
-     * This is triggered by AudioController when the demo mode has successfully been toggled
-     *
-     * @param event
-     */
-    @SuppressWarnings("unused")
-    @Subscribe
-    public void onDemoModeEvent(final DemoModeEvent event) {
-        LG.Info(TAG, "Demo mode toggled: %s", event);
-    }
-
-    /**
      * Triggered by AudioController when it's callback AudioManager.onAudioFocusChange is called.
-     * <p/>
+     *
      * This is for when focus changes for this app, triggered by the AudioManager.onAudioFocusChange interface
      * which can be caused by an audio interruption, such as an incoming call.
      *
@@ -285,20 +180,14 @@ public class MainActivity extends ActivityBase implements ActivityCompat.OnReque
     }
 
     /**
-     * Triggered by AudioController to notify that Sapa started, or native audio started
+     * Triggered by AudioController to notify that native audio started
      *
      * @param event
      */
     @SuppressWarnings("unused")
     @Subscribe
     public void onAudioTypeEvent(final AudioTypeEvent event) {
-        if (event.type.equals(AudioTypeEvent.TYPE_SAPA)) {
-//            FlurryAgent.logEvent("SAPA AUDIO STARTED");
-            Toast.makeText(this, getString(R.string.sapa), Toast.LENGTH_LONG).show();
-        } else {
-//            FlurryAgent.logEvent("NATIVE AUDIO STARTED");
-            Toast.makeText(this, getString(R.string.opensl_es), Toast.LENGTH_LONG).show();
-        }
+        makeToast(com.audiofetch.aflib.R.string.audio_ready, Toast.LENGTH_LONG);
     }
 
     /**
@@ -306,7 +195,7 @@ public class MainActivity extends ActivityBase implements ActivityCompat.OnReque
      *
      * Buffer size is already set by audio controller on the apb before this is called.
      *
-     * This is not required to be implemented by SDK clients
+     * This is not required to be implemented by SDK clients, but is useful if offering music
      *
      * @param event
      */
@@ -329,81 +218,13 @@ public class MainActivity extends ActivityBase implements ActivityCompat.OnReque
                                 final String[] values = getResources().getStringArray(R.array.pref_buffer_choice_names);
                                 final String mode = (MUSIC_BUFFER_SIZE == bufferSizeMs) ? values[1] : values[0],
                                         msg = String.format(getString(R.string.listening_mode_set), mode);
-                                Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show();
+                                makeToast(msg, Toast.LENGTH_LONG);
                             }
                         });
                     }
                 } catch (NumberFormatException ex) {
                     ex.printStackTrace();
                 }
-            } else if (event.key.equals(AudioController.PREF_SAPA_ENABLED)) {
-                if (event.restartRequired) {
-                    Toast.makeText(MainActivity.this, getString(R.string.app_restarting), Toast.LENGTH_LONG).show();
-                }
-            }
-        }
-    }
-
-    /**
-     * This is fired when the AudioFetch connection goes from one of these states:
-     * DISCOVERING, PLAYING, DROPOUT, TIMEOUT (couldn't find any devices), ERROR (event contains error message)
-     *
-     * This is should be implemented by SDK clients so the ui can update accordingly.
-     *
-     * @param event
-     *
-     * @todo move this to an event in playerfragment
-     */
-    @SuppressWarnings("unused")
-    @Subscribe
-    public void onAudioStateEvent(final AudioStateEvent event) {
-        switch (event.state) {
-            case AudioStateEvent.STATE_DISCOVERING: {
-                if (!mAudioController.isAudioSourceConnected() && !mConnectionMsgShown) {
-                    showProgress(getString(R.string.fetching_audio));
-                    mConnectionMsgShown = true;
-                }
-                break;
-            }
-            case AudioStateEvent.STATE_PLAYING: {
-                if (mAudioController.isAudioSourceConnected() && !mAudioController.isExpressDevice()) {
-                    // TODO: show success msg
-                }
-                break;
-            }
-            case AudioStateEvent.STATE_DROPOUT: {
-                break;
-            }
-            case AudioStateEvent.STATE_TIMEOUT: {
-                this.dismissProgress();
-                if (!mDemoPromptShown) {
-                    if (!mAudioController.isSapaSession()) {
-                        this.toastFor(getString(R.string.no_connection_msg), 5);
-                        // todo move this to an event in playerfragment
-                        if (null != mPlayerFragment) {
-                            Toast.makeText(this, R.string.no_connection_msg, Toast.LENGTH_LONG).show();
-                            mPlayerFragment.setupChannels(); // just show a 16 channel UI for demo mode
-                        }
-                        // todo ensure discovery continues and demo mode is re-enabled
-//                        this.confirmDialog(R.string.restart_app, R.string.restart_app_prompt, new DialogInterface.OnClickListener() {
-//                            @Override
-//                            public void onClick(DialogInterface dialog, int which) {
-//                                ApplicationBase.restartApp();
-//                            }
-//                        });
-                    } else {
-                        makeToast(R.string.sapa_fail, Toast.LENGTH_LONG);
-                        mAudioController.forceNativeAudio();
-                    }
-                    mDemoPromptShown = true;
-                }
-                break;
-            }
-            case AudioStateEvent.STATE_ERROR:
-            default: {
-                // todo move this to an event in playerfragment
-                Toast.makeText(this, event.error, Toast.LENGTH_LONG).show();
-                break;
             }
         }
     }
@@ -411,19 +232,6 @@ public class MainActivity extends ActivityBase implements ActivityCompat.OnReque
     /*==============================================================================================
     // PUBLIC METHODS
     //============================================================================================*/
-
-    public void toggleAudio(final WifiStatusEvent event) {
-        try {
-            final boolean isAudioPlaying = getAudioController().isAudioPlaying();
-            if (!isAudioPlaying && event.enabled && event.connected) {
-                getAudioController().startAudio();
-            } else if (!event.enabled || !event.connected) {
-                getAudioController().pauseAudio();
-            }
-        } catch(Exception ex) {
-            LG.Error(TAG, "FAILED TO START/STOP AUDIO", ex);
-        }
-    }
 
     /**
      * Returns the audio controller

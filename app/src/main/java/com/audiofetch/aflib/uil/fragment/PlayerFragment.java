@@ -15,6 +15,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.audiofetch.afaudiolib.bll.event.AudioStateEvent;
 import com.audiofetch.aflib.uil.adapter.ChannelGridAdapter;
 import com.audiofetch.aflib.uil.activity.MainActivity;
 import com.audiofetch.aflib.uil.fragment.base.FragmentBase;
@@ -25,20 +26,13 @@ import com.audiofetch.afaudiolib.bll.colleagues.AudioController;
 import com.audiofetch.afaudiolib.bll.event.ChannelSelectedEvent;
 import com.audiofetch.afaudiolib.bll.event.ChannelChangedEvent;
 import com.audiofetch.afaudiolib.bll.event.ChannelsReceivedEvent;
-import com.audiofetch.afaudiolib.bll.event.NoInternetDetectedEvent;
 import com.audiofetch.afaudiolib.bll.event.VolumeChangeEvent;
 import com.audiofetch.afaudiolib.bll.event.WifiStatusEvent;
 
 import com.audiofetch.afaudiolib.bll.helpers.LG;
 import com.audiofetch.afaudiolib.dal.Channel;
 
-import com.google.common.collect.ContiguousSet;
-import com.google.common.collect.DiscreteDomain;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Range;
-
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -47,7 +41,7 @@ import com.squareup.otto.Subscribe;
 /**
  * Fragment that contains the player view
  */
-public class PlayerFragment extends FragmentBase implements View.OnClickListener {
+public class PlayerFragment extends FragmentBase {
 
     /*==============================================================================================
     // DATA MEMBERS
@@ -55,9 +49,8 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
 
     public final static String TAG = PlayerFragment.class.getSimpleName();
 
-    protected static int mAudioMode = 0,
-            mCurrentChannel = 0;
-
+    protected static int mCurrentChannel = 0;
+    protected boolean mConnectionMsgShown = false;
     protected static List<Integer> mChannelIntegerList = new ArrayList<>();
     protected static List<Channel> mChannels = new ArrayList<>();
     protected static AudioController mAudioController;
@@ -84,7 +77,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mAudioController = AudioController.get();
+        mAudioController = getMainActivity().getAudioController();
     }
 
     @Override
@@ -100,12 +93,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
         mGridView = (GridView)mView.findViewById(R.id.channel_grid);
         mGridView.setOnItemClickListener(mChannelTappedListener);
 
-        return mView;
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
         final int loadCount = mLoadCount.incrementAndGet();
         final boolean isFirstLoad = (1 == loadCount);
 
@@ -120,6 +107,13 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
             }
         }
 
+        return mView;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        final boolean isFirstLoad = (1 == mLoadCount.get());
         if (isFirstLoad) {
             mChannelsLoaded = false;
         } else {
@@ -132,6 +126,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     public void onStop() {
         // remove any possible pending callbacks
         MainActivity.getBus().unregister(this);
+
         mIsBusRegistered = false;
         super.onStop();
     }
@@ -141,46 +136,61 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
         super.onResume();
     }
 
-    @Override
-    public void onClick(View view) {
-        if (mAudioController.isMuted()) {
-            mAudioController.unmuteAudio();
-        } else {
-            mAudioController.muteAudio();
-        }
-    }
-
     /*==============================================================================================
     // BUS EVENTS
     //============================================================================================*/
 
     /**
-     * Triggered when connected to a router with no internet connection.
-     * Shuts down ads so that they no longer try to load from the internet.
+     * This is fired when the AudioFetch connection goes from one of these states:
+     * DISCOVERING, PLAYING, DROPOUT, TIMEOUT (couldn't find any devices), ERROR (event contains error message)
      *
      * @param event
+     *
      */
     @SuppressWarnings("unused")
     @Subscribe
-    public void onNoInternetDetectedEvent(final NoInternetDetectedEvent event) {
-        LG.Warn(TAG, "NO INTERNET DETECTED!");
+    public void onAudioStateEvent(final AudioStateEvent event) {
+        switch (event.state) {
+            case AudioStateEvent.STATE_DISCOVERING: {
+                // This is triggered repeatedly while the AudioFetch SDK is performing discovery
+                if (!mAudioController.isAudioSourceConnected() && !mConnectionMsgShown) {
+                    getMainActivity().showProgress(getString(R.string.fetching_audio));
+                    mConnectionMsgShown = true;
+                }
+                break;
+            }
+            case AudioStateEvent.STATE_PLAYING: {
+                if (mAudioController.isAudioSourceConnected()) {
+                    // This is triggered repeatedly while audio is playing with no dropouts
+                }
+                break;
+            }
+            case AudioStateEvent.STATE_DROPOUT: {
+                // This is triggered repeatedly while audio is playing, but dropouts are occurring
+                break;
+            }
+            case AudioStateEvent.STATE_TIMEOUT: {
+                // This will be triggered if device discovery has failed
+                getMainActivity().dismissProgress();
+                getMainActivity().toastFor(getString(R.string.no_connection_message), 45);
+                mChannelName.setText(null);
+                mChannelText.setText(null);
+                break;
+            }
+            case AudioStateEvent.STATE_ERROR:
+            default: {
+                getMainActivity().makeToast(event.error, Toast.LENGTH_LONG);
+                break;
+            }
+        }
     }
 
     /**
-     * This is triggered when the volume has changed via the keyboard, device buttons
+     * This is triggered by {@link com.audiofetch.afaudiolib.bll.colleagues.AudioController} when
+     * channels have been discovered
      *
      * @param event
      */
-    @SuppressWarnings("unused")
-    @Subscribe
-    public void onVolumeChangeEvent(final VolumeChangeEvent event) {
-        LG.Info(TAG, "Volume changed to: %d", event.volume);
-    }
-
-    /*==================
-    // CHANNEL EVENTS
-    //================*/
-
     @SuppressWarnings("unused")
     @Subscribe
     public void onChannelsReceivedEvent(final ChannelsReceivedEvent event) {
@@ -232,21 +242,18 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     }
 
     /**
-     * Triggered by WifiController via AudioController
+     * Triggered by {@link com.audiofetch.afaudiolib.bll.colleagues.AudioController} for a Wifi event (e.g., user turns off wifi, no wifi present)
      *
      * @param event
      */
     @SuppressWarnings("unused")
     @Subscribe
     public void onWifiStatusEvent(final WifiStatusEvent event) {
-        try {
-            if (event.enabled && event.connected) {
-                // SUCCESSFULLY CONNECTED TO WIFI
-            } else {
+        if (!event.enabled || !event.connected) {
+            try {
                 // FAILED TO CONNECTED TO WIFI
                 final int msgResId = (event.enabled) ? R.string.status_nowifi : R.string.status_wifioff;
-                Toast.makeText(getActivity(), msgResId, Toast.LENGTH_LONG).show();
-                setupChannels(); // show a default ui for potential demo mode
+                getMainActivity().toastFor(getString(msgResId), 45);
 
                 mUiHandler.postDelayed(new Runnable() {
                     @Override
@@ -258,10 +265,23 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                         }
                     }
                 }, 700);
+            } catch(Exception ex) {
+                LG.Error(TAG, ex.getMessage(), ex);
             }
-        } catch(Exception ex) {
-            LG.Error(TAG, "WIFI STATUS ERROR:", ex);
+        } else {
+            LG.Info(TAG, "WIFI IS ENABLED AND CONNECTED!");
         }
+    }
+
+    /**
+     * This is triggered when the volume has changed via the keyboard, device buttons
+     *
+     * @param event
+     */
+    @SuppressWarnings("unused")
+    @Subscribe
+    public void onVolumeChangeEvent(final VolumeChangeEvent event) {
+        LG.Info(TAG, "Volume changed to: %d", event.volume);
     }
 
     /*==============================================================================================
@@ -270,7 +290,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
 
 
     /**
-     * Call in calling activity to set volume by passing event from the activity's onKeyDown event handler
+     * Should be called by calling activity to set volume by passing event from the activity's onKeyDown event handler
      *
      * @param keyCode
      * @param event
@@ -288,56 +308,13 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     }
 
     /**
-     * Initializes the ChannelViewPager with a list of channels instead of having it generate the list
+     * Sets up the channel grid to display the discovered channels
      */
-    protected synchronized void initChannels() {
+    public synchronized void setupChannels() {
         if (!mChannelsLoaded) {
             mGridViewAdapter = new ChannelGridAdapter(mChannels, getActivity());
             mGridView.setAdapter(mGridViewAdapter);
             mChannelsLoaded = true;
-        }
-    }
-
-    /**
-     * Sets up channel control
-     */
-    @SuppressWarnings("unchecked")
-    public synchronized void setupChannels() {
-        if (!mChannelsLoaded) {
-            final int STEREO_CHANNELS = 15, // 16 - index starts at 0 so 0..15 is 16
-                      MONO_CHANNELS = 31; // 32
-            final Range STEREO_CHANNEL_RANGE = Range.closed(0, STEREO_CHANNELS),
-                    MONO_CHANNEL_RANGE = Range.closed(0, MONO_CHANNELS);
-            mAudioMode = mAudioController.getAudioMode();
-
-            final boolean isPagerTypeSet = (!mChannelIntegerList.isEmpty() || !mChannels.isEmpty()),
-                    useDefaultMode = (!isPagerTypeSet || (0 == mChannelIntegerList.size() && 0 == mChannels.size()));
-
-            if (useDefaultMode) {
-                LG.Verbose(TAG, "VIEW PAGER INITIALIZING WITH DEFAULT SETTINGS AND CHANNELS FOR MODE: %d", mAudioMode);
-
-                try {
-                    ImmutableList<Integer> chnlList = (ImmutableList<Integer>) ImmutableList.copyOf(ContiguousSet.create(STEREO_CHANNEL_RANGE, DiscreteDomain.integers()));
-                    if (null != chnlList && !chnlList.isEmpty()) {
-                        if (!mChannelIntegerList.isEmpty()) {
-                            mChannelIntegerList.clear();
-                        }
-                        mChannelIntegerList.addAll(chnlList);
-                        Collections.sort(mChannelIntegerList);
-                    }
-                } catch(ClassCastException ex) {
-                    LG.Error(TAG, ex.getMessage(), ex);
-                }
-            } else {
-                LG.Debug(TAG, "VIEW PAGER INITIALIZING WITH CONFIGURED CHANNELS: %s", (!mChannels.isEmpty()) ? mChannels : mChannelIntegerList);
-            }
-
-            mUiHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    initChannels();
-                }
-            });
         }
     }
 

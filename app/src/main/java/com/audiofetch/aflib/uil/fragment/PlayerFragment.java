@@ -122,13 +122,11 @@ public class PlayerFragment extends FragmentBase {
 
     @Override
     public void onStop() {
-        // remove any possible pending callbacks
-
         if (mIsBusRegistered) {
+            // remove any possible pending callbacks
             MainActivity.getBus().unregister(this);
+            mIsBusRegistered = false;
         }
-
-        mIsBusRegistered = false;
         super.onStop();
     }
 

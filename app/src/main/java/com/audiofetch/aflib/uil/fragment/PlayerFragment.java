@@ -93,6 +93,12 @@ public class PlayerFragment extends FragmentBase {
         mGridView = (GridView)mView.findViewById(R.id.channel_grid);
         mGridView.setOnItemClickListener(mChannelTappedListener);
 
+        return mView;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
         final int loadCount = mLoadCount.incrementAndGet();
         final boolean isFirstLoad = (1 == loadCount);
 
@@ -106,14 +112,6 @@ public class PlayerFragment extends FragmentBase {
                 LG.Error(TAG, "UNKNOWN BUS ERROR: ", ex);
             }
         }
-
-        return mView;
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        final boolean isFirstLoad = (1 == mLoadCount.get());
         if (isFirstLoad) {
             mChannelsLoaded = false;
         } else {
@@ -125,7 +123,10 @@ public class PlayerFragment extends FragmentBase {
     @Override
     public void onStop() {
         // remove any possible pending callbacks
-        MainActivity.getBus().unregister(this);
+
+        if (mIsBusRegistered) {
+            MainActivity.getBus().unregister(this);
+        }
 
         mIsBusRegistered = false;
         super.onStop();

@@ -1,5 +1,6 @@
 package com.audiofetch.aflib.uil.activity.base;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
@@ -11,10 +12,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 
-import android.util.DisplayMetrics;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -26,7 +24,6 @@ import android.widget.Toast;
 
 import com.audiofetch.aflib.R;
 import com.audiofetch.aflib.uil.activity.ExitActivity;
-import com.audiofetch.aflib.uil.fragment.menu.SlidingMenuFragment;
 
 import com.audiofetch.afaudiolib.bll.app.ApplicationBase;
 import com.audiofetch.afaudiolib.bll.event.ChannelChangedEvent;
@@ -35,8 +32,6 @@ import com.audiofetch.afaudiolib.bll.helpers.LG;
 
 import com.squareup.otto.Bus;
 
-import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu;
-import com.jeremyfeinstein.slidingmenu.lib.app.SlidingFragmentActivity;
 
 import android.annotation.TargetApi;
 
@@ -47,7 +42,7 @@ import android.annotation.TargetApi;
  *
  * Hides boilerplate code from MainActivity...
  */
-public class ActivityBase extends SlidingFragmentActivity {
+public class ActivityBase extends Activity {
 
     /*==============================================================================================
     // DATA MEMBERS
@@ -62,8 +57,6 @@ public class ActivityBase extends SlidingFragmentActivity {
     protected FragmentManager mFragManager;
     protected ProgressDialog mProgressDialog;
     protected Handler mUiHandler = new Handler();
-    protected SlidingMenu mSlidingMenu;
-    protected SlidingMenuFragment mSlidingMenuFragment;
 
     protected boolean mIsRunning;
     protected FrameLayout mMainContainer;
@@ -86,8 +79,6 @@ public class ActivityBase extends SlidingFragmentActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // init preferences
-        PreferenceManager.setDefaultValues(this, R.xml.fragment_settings, false);
 
         // handler, bus and frag manager
         mUiHandler = new Handler();
@@ -104,8 +95,10 @@ public class ActivityBase extends SlidingFragmentActivity {
         ActionBar ab = getActionBar();
         ab.setDisplayShowTitleEnabled(false);
         ab.setDisplayHomeAsUpEnabled(false); // show back arrow
+        ab.setDisplayShowHomeEnabled(false);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-            enableHomeButton();
+            disableHomeButton();
         }
 
         @SuppressWarnings("deprecation")
@@ -126,15 +119,10 @@ public class ActivityBase extends SlidingFragmentActivity {
         try {
             // assign content view and sliding menu view
             setContentView(R.layout.main_fragment_container);
-            setBehindContentView(R.layout.fragment_menu);
-
             mMainContainer = (FrameLayout) findViewById(R.id.main_container);
 
             // potential fix for startup crash on 6.x
             mMainContainer.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-
-            // setup side menu
-            setupSlidingMenu();
         } catch(Exception ex) {
             LG.Error(TAG, "UNKNOWN ERRROR: ", ex);
         }
@@ -176,10 +164,6 @@ public class ActivityBase extends SlidingFragmentActivity {
      */
     @Override
     public void onBackPressed() {
-        if (!mSlidingMenuFragment.isShowingPlayer()) {
-            mSlidingMenuFragment.selectMenuItem(SlidingMenuFragment.PLAYER, false);
-            return;
-        }
         this.exitApplicationClearHistory();
     }
 
@@ -188,13 +172,8 @@ public class ActivityBase extends SlidingFragmentActivity {
         final int itemId = item.getItemId();
         switch (itemId) {
             case android.R.id.home: {
-                if (mSlidingMenuFragment.isShowingPlayer()) {
-                    toggle();
-                    return true;
-                } else {
-                    onBackPressed();
-                    return true;
-                }
+                onBackPressed();
+                return true;
             }
         }
         return super.onMenuItemSelected(featureId, item);
@@ -369,12 +348,8 @@ public class ActivityBase extends SlidingFragmentActivity {
      * @param newContent
      * @param title
      * @param tag
-     * @param toggle
      */
-    public void switchContent(final Fragment newContent, final String title, final String tag, boolean toggle) {
-        if (toggle) {
-            toggle(); // hide menu first
-        }
+    public void switchContent(final Fragment newContent, final String title, final String tag) {
         showActionProgress(true);
 
         if (null != title && !title.isEmpty()) {
@@ -436,10 +411,9 @@ public class ActivityBase extends SlidingFragmentActivity {
      *
      * @param newContent
      * @param tag
-     * @param toggle
      */
-    public void switchContent(final Fragment newContent, final String tag, boolean toggle) {
-        switchContent(newContent, "", tag, toggle);
+    public void switchContent(final Fragment newContent, final String tag) {
+        switchContent(newContent, "", tag);
     }
 
     /**
@@ -464,60 +438,8 @@ public class ActivityBase extends SlidingFragmentActivity {
      */
     public void updateActionBar() {
         final ActionBar ab = getActionBar();
-        if (mSlidingMenuFragment.isShowingPlayer()) {
-            ab.setDisplayHomeAsUpEnabled(false);
-            ab.setDisplayShowHomeEnabled(true);
-        } else {
-            ab.setDisplayHomeAsUpEnabled(true);
-            ab.setDisplayShowHomeEnabled(true);
-        }
-    }
-
-    /**
-     * Indicates whether the side, slide-out menu is showing
-     *
-     * @return
-     */
-    public boolean isSlidingMenuVisible() {
-        final boolean isShowing = (null != mSlidingMenu && mSlidingMenu.isMenuShowing()) ? true : false;
-        return isShowing;
-    }
-
-    /**
-     * initialize the sliding menu
-     */
-    protected void setupSlidingMenu() {
-        if (null != findViewById(R.id.menu_frame)) {
-            try {
-                mSlidingMenuFragment = new SlidingMenuFragment();
-                FragmentTransaction t = mFragManager.beginTransaction();
-                t.replace(R.id.menu_frame, mSlidingMenuFragment, SlidingMenuFragment.TAG);
-                t.commit();
-
-                // calculate the behind offset so the menu width is always 300 dp
-                final DisplayMetrics metrics = new DisplayMetrics();
-                getWindowManager().getDefaultDisplay().getMetrics(metrics);
-                int px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 300, metrics);
-                px = metrics.widthPixels - px;
-
-                mSlidingMenu = getSlidingMenu();
-                if (null != mSlidingMenu) {
-                    mSlidingMenu.setEnabled(false);
-                    mSlidingMenu.setVisibility(View.VISIBLE);
-                    mSlidingMenu.setMode(SlidingMenu.LEFT);
-                    mSlidingMenu.setBehindOffsetRes(R.dimen.slidingmenu_offset);
-                    mSlidingMenu.setFadeDegree(0.35f);
-                    mSlidingMenu.setSelectorEnabled(true);
-                    mSlidingMenu.setBehindOffset(px);
-                    mSlidingMenu.setSlidingEnabled(true);
-                    mSlidingMenu.setTouchModeAbove(SlidingMenu.TOUCHMODE_NONE);
-                    mSlidingMenu.toggle();
-                }
-                setSlidingActionBarEnabled(true);
-            } catch(Exception ex) {
-                LG.Error(TAG, "FAILED TO SETUP SLIDING MENU:", ex);
-            }
-        }
+        ab.setDisplayHomeAsUpEnabled(false);
+        ab.setDisplayShowHomeEnabled(false);
     }
 
     /**
@@ -531,7 +453,7 @@ public class ActivityBase extends SlidingFragmentActivity {
      * Enables the home button
      */
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-    protected void enableHomeButton() {
-        getActionBar().setHomeButtonEnabled(true);
+    protected void disableHomeButton() {
+        getActionBar().setHomeButtonEnabled(false);
     }
 }

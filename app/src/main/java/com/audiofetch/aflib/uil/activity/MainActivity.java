@@ -247,27 +247,12 @@ public class MainActivity extends ActivityBase {
     }
 
     /**
-     * Sets the player fragment
-     * @param playerFragment
-     */
-    public void setPlayerFragment(final PlayerFragment playerFragment) {
-        mPlayerFragment = playerFragment;
-    }
-
-    /**
-     * Returns the player fragment
-     * @return
-     */
-    public PlayerFragment getPlayerFragment() {
-        return mPlayerFragment;
-    }
-
-    /**
      * Pops off any fragments that are covering the player
      */
     public void showPlayerFragment() {
-        if (null != mSlidingMenuFragment) {
-            mSlidingMenuFragment.showPlayerFragment();
+        if (null == mPlayerFragment) {
+            mPlayerFragment = new PlayerFragment();
         }
+        switchContent(mPlayerFragment, PlayerFragment.TAG);
     }
 }

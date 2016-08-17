@@ -19,7 +19,8 @@
         <item name="android:actionModeSplitBackground">@drawable/cab_background_bottom_waio</item>
         <item name="android:actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Waio</item>
 
-        <item name="android:icon">@drawable/ic_navigation_drawer</item>
+        <item name="android:icon">@android:color/transparent</item>
+        <item name="android:logo">@android:color/transparent</item>
         <item name="android:title">@null</item>
     </style>
 

@@ -13,36 +13,8 @@
         <item name="android:progressBarStyle">@style/ProgressBar.Waio</item>
     </style>
 
-    <style name="PopupMenu.Waio" parent="@android:style/Widget.Holo.Light.ListPopupWindow">
-        <item name="android:popupBackground">@drawable/menu_dropdown_panel_waio</item>
-    </style>
-
-    <style name="DropDownListView.Waio" parent="@android:style/Widget.Holo.Light.ListView.DropDown">
-        <item name="android:listSelector">@drawable/selectable_background_waio</item>
-    </style>
-
-    <style name="ActionBarTabStyle.Waio" parent="@android:style/Widget.Holo.Light.ActionBar.TabView">
-        <item name="android:background">@drawable/tab_indicator_ab_waio</item>
-    </style>
-
-    <style name="DropDownNav.Waio" parent="@android:style/Widget.Holo.Light.Spinner">
-        <item name="android:background">@drawable/spinner_background_ab_waio</item>
-        <item name="android:popupBackground">@drawable/menu_dropdown_panel_waio</item>
-        <item name="android:dropDownSelector">@drawable/selectable_background_waio</item>
-    </style>
-
     <style name="ProgressBar.Waio" parent="@android:style/Widget.Holo.Light.ProgressBar.Horizontal">
         <item name="android:progressDrawable">@drawable/progress_horizontal_waio</item>
-    </style>
-
-    <style name="ActionButton.CloseMode.Waio" parent="@android:style/Widget.Holo.Light.ActionButton.CloseMode">
-        <item name="android:background">@drawable/btn_cab_done_waio</item>
-    </style>
-
-    <!-- this style is only referenced in a Light.DarkActionBar based theme -->
-    <style name="Theme.Waio.Widget" parent="@android:style/Theme.Holo">
-        <item name="android:popupMenuStyle">@style/PopupMenu.Waio</item>
-        <item name="android:dropDownListViewStyle">@style/DropDownListView.Waio</item>
     </style>
 
     <style name="SeekBarWaio" parent="android:Widget.SeekBar">

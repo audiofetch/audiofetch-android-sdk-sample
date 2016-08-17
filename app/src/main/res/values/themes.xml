@@ -10,14 +10,7 @@
         <item name="android:windowBackground">@android:color/white</item>
         <item name="android:seekBarStyle">@style/SeekBarWaio</item>
         <item name="android:actionBarItemBackground">@drawable/selectable_background_waio</item>
-        <item name="android:popupMenuStyle">@style/PopupMenu.Waio</item>
-        <item name="android:dropDownListViewStyle">@style/DropDownListView.Waio</item>
-        <item name="android:actionBarTabStyle">@style/ActionBarTabStyle.Waio</item>
-        <item name="android:actionDropDownStyle">@style/DropDownNav.Waio</item>
         <item name="android:actionBarStyle">@style/ActionBar.Solid.Waio</item>
-        <item name="android:actionModeBackground">@drawable/cab_background_top_waio</item>
-        <item name="android:actionModeSplitBackground">@drawable/cab_background_bottom_waio</item>
-        <item name="android:actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Waio</item>
 
         <item name="android:icon">@android:color/transparent</item>
         <item name="android:logo">@android:color/transparent</item>

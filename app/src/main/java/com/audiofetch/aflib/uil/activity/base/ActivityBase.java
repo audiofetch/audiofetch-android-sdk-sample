@@ -349,14 +349,8 @@ public class ActivityBase extends Activity {
      * @param title
      * @param tag
      */
-    public void switchContent(final Fragment newContent, final String title, final String tag) {
+    public void switchContent(final Fragment newContent, final String tag) {
         showActionProgress(true);
-
-        if (null != title && !title.isEmpty()) {
-            setTitle(title);
-        } else {
-            setTitle(null);
-        }
 
         // then show fragment after menu animation
         final CountDownTimer tmr = new CountDownTimer(550, 1) {
@@ -404,16 +398,6 @@ public class ActivityBase extends Activity {
             }
         };
         tmr.start();
-    }
-
-    /**
-     * Switches the content
-     *
-     * @param newContent
-     * @param tag
-     */
-    public void switchContent(final Fragment newContent, final String tag) {
-        switchContent(newContent, "", tag);
     }
 
     /**

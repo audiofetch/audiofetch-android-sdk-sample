@@ -1,6 +1,7 @@
 package com.audiofetch.aflib.uil.activity.base;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
@@ -8,11 +9,14 @@ import android.app.FragmentTransaction;
 import android.app.ActionBar;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 
+import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -184,6 +188,13 @@ public class ActivityBase extends Activity {
     //============================================================================================*/
 
     /**
+     * Starts the Wifi settings app
+     */
+    public void showWifiSettings() {
+        startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
+    }
+
+    /**
      * Turns on/off the back arrow in the actionbar
      *
      * @param visible
@@ -325,6 +336,21 @@ public class ActivityBase extends Activity {
         mProgressDialog = null;
     }
 
+    /**
+     * Shows an confirm dialog, think javascript:window.alert
+     *
+     * @param titleResId
+     * @param msgResId
+     * @param okCallback
+     */
+    public void alert(final int titleResId, final int msgResId, final DialogInterface.OnClickListener okCallback) {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle(titleResId)
+                .setMessage(msgResId)
+                .setPositiveButton(android.R.string.ok, okCallback);
+        builder.create().show();
+    }
+
     /*=======================================================
     // FRAGMENT SUPPORT
     //=====================================================*/
@@ -346,7 +372,6 @@ public class ActivityBase extends Activity {
      * Swaps the content in the main view area
      *
      * @param newContent
-     * @param title
      * @param tag
      */
     public void switchContent(final Fragment newContent, final String tag) {

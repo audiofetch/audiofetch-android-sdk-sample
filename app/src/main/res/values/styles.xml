@@ -1,31 +1,6 @@
 <resources>
-
     <style name="ActionBar.Solid.Waio" parent="@android:style/Widget.Holo.Light.ActionBar.Solid">
-        <item name="android:background">@drawable/ab_solid_waio</item>
-        <item name="android:backgroundStacked">@drawable/ab_stacked_solid_waio</item>
-        <item name="android:backgroundSplit">@drawable/ab_bottom_solid_waio</item>
-        <item name="android:progressBarStyle">@style/ProgressBar.Waio</item>
+        <item name="android:background">@color/afetch_blue</item>
         <item name="android:displayOptions">showHome|useLogo</item>
-    </style>
-
-    <style name="ActionBar.Transparent.Waio" parent="@android:style/Widget.Holo.Light.ActionBar">
-        <item name="android:background">@drawable/ab_transparent_waio</item>
-        <item name="android:progressBarStyle">@style/ProgressBar.Waio</item>
-    </style>
-
-    <style name="ProgressBar.Waio" parent="@android:style/Widget.Holo.Light.ProgressBar.Horizontal">
-        <item name="android:progressDrawable">@drawable/progress_horizontal_waio</item>
-    </style>
-
-    <style name="SeekBarWaio" parent="android:Widget.SeekBar">
-        <item name="android:progressDrawable">@drawable/waio_scrubber_progress_horizontal_holo_light</item>
-        <item name="android:indeterminateDrawable">@drawable/waio_scrubber_progress_horizontal_holo_light</item>
-        <item name="android:thumb">@drawable/waio_scrubber_control_selector_holo_light</item>
-        <item name="android:background">@drawable/waio_scrubber_background_holo_light</item>
-        <item name="android:minHeight">13dip</item>
-        <item name="android:maxHeight">32dip</item>
-        <item name="android:thumbOffset">16dip</item>
-        <item name="android:paddingLeft">16dip</item>
-        <item name="android:paddingRight">16dip</item>
     </style>
 </resources>

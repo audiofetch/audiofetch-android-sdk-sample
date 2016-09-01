@@ -24,16 +24,26 @@
     <SeekBar
         android:id="@+id/volume_slider"
         android:layout_marginTop="10dp"
-        android:layout_width="200dp"
+        android:layout_width="250dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="center" />
+        android:layout_gravity="center"
+        android:progress="65"
+        android:progressDrawable="@drawable/seekbar"
+        android:thumb="@drawable/seekbar_thumb"
+        android:paddingLeft="30px"
+        android:paddingRight="30px"
+        android:paddingTop="10px"
+        android:paddingBottom="10px"
+        android:minHeight="3dip"
+        android:maxHeight="3dip" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:orientation="horizontal"
-        android:gravity="left">
+        android:gravity="left"
+        android:layout_marginBottom="10dp">
         <TextView
             android:id="@+id/label_current"
             android:layout_width="165dp"
@@ -52,30 +62,6 @@
             android:text="0" />
     </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="left"
-        android:layout_marginBottom="10dp">
-        <TextView
-            android:id="@+id/label_name"
-            android:layout_width="165dp"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="@string/label_channel_name"
-            android:layout_gravity="end"
-            android:textAlignment="textEnd" />
-        <TextView
-            android:id="@+id/text_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="10dp"
-            android:layout_gravity="start"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="1" />
-    </LinearLayout>
-
     <GridView
         android:id="@+id/channel_grid"
         android:layout_width="match_parent"
@@ -84,10 +70,10 @@
         android:columnWidth="48dp"
         android:overScrollMode="always"
         android:numColumns="auto_fit"
-        android:verticalSpacing="10dp"
-        android:horizontalSpacing="10dp"
-        android:paddingLeft="10dp"
-        android:paddingRight="10dp"
+        android:verticalSpacing="20dp"
+        android:horizontalSpacing="20dp"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
         android:gravity="center">
     </GridView>
 </LinearLayout>

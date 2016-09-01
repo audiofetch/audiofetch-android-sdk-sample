@@ -180,17 +180,6 @@ public class MainActivity extends ActivityBase {
     }
 
     /**
-     * Triggered by AudioController to notify that native audio started
-     *
-     * @param event
-     */
-    @SuppressWarnings("unused")
-    @Subscribe
-    public void onAudioTypeEvent(final AudioTypeEvent event) {
-        makeToast(com.audiofetch.aflib.R.string.audio_ready, Toast.LENGTH_LONG);
-    }
-
-    /**
      * Triggered by AudioController when a preference pertaining to audio has changed.
      *
      * Buffer size is already set by audio controller on the apb before this is called.

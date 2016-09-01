@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">AudioFetch SDK Sample</string>
+    <string name="app_name">AF SDK Sample</string>
+    <string name="app_title">AudioFetch SDK Sample</string>
 
     <string name="fetching_audio">Fetching Audio&#8230;</string>
     <string name="actionbar_title"></string>
@@ -16,14 +17,16 @@
 
 
     <string name="no_connection_message">A connection was not found.  Please ensure that you are connected to an AudioFetch enabled WiFi network and restart the app.</string>
-    <string name="audio_ready">Audio Ready</string>
     <string name="status_nowifi">Device is disconnected from Wifi.  Please check Wifi settings.</string>
     <string name="status_wifioff">Please turn on your device\&#39;s WiFi.</string>
-    <string name="status_badwifi">Please connect to an AudioFetch-enabled WiFi.</string>
 
+    <string name="wifi_alert_title">Connect to AudioFetch WiFi</string>
+    <string name="wifi_alert_msg">Please connect to an AudioFetch-enabled WiFi.</string>
+
+    <string name="channels_not_loaded">No channels found!</string>
+    <string name="loading_channels">Loading Channels&#8230;</string>
     <string name="label_channel">Channel</string>
     <string name="label_current_channel">Current Channel:</string>
-    <string name="label_channel_name">Name:</string>
     <string name="label_volume">Volume</string>
     <string name="filter_title_view_audiofetch">View AudioFetch</string>
 </resources>

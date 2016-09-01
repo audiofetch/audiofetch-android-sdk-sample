@@ -1,9 +1,13 @@
 package com.audiofetch.aflib.uil.fragment;
 
 
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 
+import android.preference.PreferenceManager;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -49,6 +53,13 @@ public class PlayerFragment extends FragmentBase {
 
     public final static String TAG = PlayerFragment.class.getSimpleName();
 
+    public final static String FONT_PRIMARY = "fonts/proxima_nova_regular.otf";
+    public final static String FONT_SECONDARY = "fonts/proxima_nova_thin.otf";
+    public final static String FONT_BOLD = "fonts/proxima_nova_bold.otf";
+
+    public final static String PREF_LAST_VOLUME = "lastVolume";
+    public final static int PREF_LAST_VOLUME_DEFAULT = 65;
+
     protected static int mCurrentChannel = 0;
     protected boolean mConnectionMsgShown = false;
     protected static List<Integer> mChannelIntegerList = new ArrayList<>();
@@ -66,9 +77,10 @@ public class PlayerFragment extends FragmentBase {
     protected Handler mUiHandler = new Handler();
 
     protected SeekBar mVolumeControl;
-    protected TextView mChannelText, mChannelName;
+    protected TextView mChannelText, mChannelLabel, mVolumeLabel;
     protected GridView mGridView;
     protected ChannelGridAdapter mGridViewAdapter;
+    protected SharedPreferences sharedPrefs;
 
     /*==============================================================================================
     // OVERRIDES
@@ -78,6 +90,7 @@ public class PlayerFragment extends FragmentBase {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mAudioController = getMainActivity().getAudioController();
+        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
     }
 
     @Override
@@ -85,10 +98,22 @@ public class PlayerFragment extends FragmentBase {
         mView = inflater.inflate(R.layout.fragment_player, container, false);
 
         mChannelText = (TextView) mView.findViewById(R.id.text_current);
-        mChannelName = (TextView) mView.findViewById(R.id.text_name);
+        mChannelLabel = (TextView) mView.findViewById(R.id.label_current);
+        mVolumeLabel = (TextView) mView.findViewById(R.id.label_volume);
 
+        final Typeface normalFont = Typeface.createFromAsset(getActivity().getAssets(), PlayerFragment.FONT_PRIMARY),
+                boldFont = Typeface.createFromAsset(getActivity().getAssets(), PlayerFragment.FONT_BOLD);
+
+        mChannelText.setTypeface(normalFont);
+        mChannelLabel.setTypeface(normalFont);
+        mVolumeLabel.setTypeface(boldFont);
+
+        final int lastVolume = sharedPrefs.getInt(PREF_LAST_VOLUME, PREF_LAST_VOLUME_DEFAULT);
         mVolumeControl = (SeekBar) mView.findViewById(R.id.volume_slider);
+        mVolumeControl.setProgress(lastVolume);
+
         mAudioController.setVolumeControl(mVolumeControl);
+        mAudioController.setVolume(lastVolume);
 
         mGridView = (GridView)mView.findViewById(R.id.channel_grid);
         mGridView.setOnItemClickListener(mChannelTappedListener);
@@ -171,14 +196,15 @@ public class PlayerFragment extends FragmentBase {
             case AudioStateEvent.STATE_TIMEOUT: {
                 // This will be triggered if device discovery has failed
                 getMainActivity().dismissProgress();
-                getMainActivity().toastFor(getString(R.string.no_connection_message), 45);
-                mChannelName.setText(null);
-                mChannelText.setText(null);
+                getMainActivity().makeToast(getString(R.string.no_connection_message), Toast.LENGTH_LONG);
+                mChannelText.setText(getString(R.string.channels_not_loaded));
                 break;
             }
             case AudioStateEvent.STATE_ERROR:
             default: {
+                getMainActivity().dismissProgress();
                 getMainActivity().makeToast(event.error, Toast.LENGTH_LONG);
+                mChannelText.setText(getString(R.string.channels_not_loaded));
                 break;
             }
         }
@@ -252,7 +278,7 @@ public class PlayerFragment extends FragmentBase {
             try {
                 // FAILED TO CONNECTED TO WIFI
                 final int msgResId = (event.enabled) ? R.string.status_nowifi : R.string.status_wifioff;
-                getMainActivity().toastFor(getString(msgResId), 45);
+                getMainActivity().makeToast(getString(msgResId), Toast.LENGTH_LONG);
 
                 mUiHandler.postDelayed(new Runnable() {
                     @Override
@@ -264,6 +290,13 @@ public class PlayerFragment extends FragmentBase {
                         }
                     }
                 }, 700);
+
+                getMainActivity().alert(R.string.wifi_alert_title, R.string.wifi_alert_msg, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        getMainActivity().showWifiSettings();
+                    }
+                });
             } catch(Exception ex) {
                 LG.Error(TAG, ex.getMessage(), ex);
             }
@@ -281,6 +314,9 @@ public class PlayerFragment extends FragmentBase {
     @Subscribe
     public void onVolumeChangeEvent(final VolumeChangeEvent event) {
         LG.Info(TAG, "Volume changed to: %d", event.volume);
+        sharedPrefs.edit()
+                .putInt(PREF_LAST_VOLUME, event.volume)
+                .commit();
     }
 
     /*==============================================================================================
@@ -313,6 +349,9 @@ public class PlayerFragment extends FragmentBase {
         if (!mChannelsLoaded) {
             mGridViewAdapter = new ChannelGridAdapter(mChannels, getActivity());
             mGridView.setAdapter(mGridViewAdapter);
+            if (mChannels.size() > 0) {
+                mChannelText.setText(mChannels.get(0).getNameOrChannel());
+            }
             mChannelsLoaded = true;
         }
     }
@@ -330,11 +369,12 @@ public class PlayerFragment extends FragmentBase {
             if (null != mGridViewAdapter) {
                 final Channel selectedChannel = (Channel)mGridViewAdapter.getItem(position);
                 if (null != selectedChannel) {
-                    final String name = selectedChannel.getNameOrChannel(),
-                            channel = String.valueOf(selectedChannel.apbChannel);
-                    mChannelName.setText(name);
-                    mChannelText.setText(channel);
+                    final String name = selectedChannel.getNameOrChannel().toUpperCase();
+                    mChannelText.setText(name);
                     mCurrentChannel = selectedChannel.channel;
+                    mGridViewAdapter.setSelectedPosition(position)
+                            .notifyDataSetChanged();
+
                     MainActivity.getBus().post(new ChannelSelectedEvent(mCurrentChannel, false, true));
                 }
             }

@@ -118,6 +118,11 @@ public class PlayerFragment extends FragmentBase {
         mGridView = (GridView)mView.findViewById(R.id.channel_grid);
         mGridView.setOnItemClickListener(mChannelTappedListener);
 
+        if (mChannels.size() > 0) {
+            mChannelsLoaded = false; // this will only happen when app is backgrounded with channels already discovered
+            setupChannels();
+        }
+
         return mView;
     }
 

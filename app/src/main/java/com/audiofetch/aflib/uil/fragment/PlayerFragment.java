@@ -238,6 +238,13 @@ public class PlayerFragment extends FragmentBase {
                         mChannelIntegerList.clear();
                     }
                     mChannelIntegerList.addAll(event.getChannels());
+
+                    if (!mChannels.isEmpty()) {
+                        mChannels.clear();
+                    }
+                    for(Integer i : mChannelIntegerList) {
+                        mChannels.add(new Channel(i.intValue(), i.intValue() + 1, String.format("%d", i.intValue() + 1)));
+                    }
                 }
             }
         }

@@ -59,13 +59,31 @@
             android:layout_marginLeft="10dp"
             android:layout_gravity="start"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="0" />
+            android:text="@string/loading_channels"
+            android:singleLine="true"
+            android:ellipsize="end" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/label_error"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp"
+        android:textAppearance="?android:textAppearanceSmall"
+        android:textColor="@color/afetch_red"
+        android:textAlignment="center"
+        android:layout_gravity="center"
+        android:text="@string/no_connection_message"
+        android:visibility="gone">
+    </TextView>
 
     <GridView
         android:id="@+id/channel_grid"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="20dp"
         android:minHeight="150dp"
         android:columnWidth="48dp"
         android:overScrollMode="always"

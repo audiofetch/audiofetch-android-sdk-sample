@@ -77,7 +77,7 @@ public class PlayerFragment extends FragmentBase {
     protected Handler mUiHandler = new Handler();
 
     protected SeekBar mVolumeControl;
-    protected TextView mChannelText, mChannelLabel, mVolumeLabel;
+    protected TextView mChannelText, mChannelLabel, mVolumeLabel, mErrorLabel;
     protected GridView mGridView;
     protected ChannelGridAdapter mGridViewAdapter;
     protected SharedPreferences sharedPrefs;
@@ -100,12 +100,14 @@ public class PlayerFragment extends FragmentBase {
         mChannelText = (TextView) mView.findViewById(R.id.text_current);
         mChannelLabel = (TextView) mView.findViewById(R.id.label_current);
         mVolumeLabel = (TextView) mView.findViewById(R.id.label_volume);
+        mErrorLabel = (TextView) mView.findViewById(R.id.label_error);
 
         final Typeface normalFont = Typeface.createFromAsset(getActivity().getAssets(), PlayerFragment.FONT_PRIMARY),
                 boldFont = Typeface.createFromAsset(getActivity().getAssets(), PlayerFragment.FONT_BOLD);
 
         mChannelText.setTypeface(normalFont);
         mChannelLabel.setTypeface(normalFont);
+        mErrorLabel.setTypeface(normalFont);
         mVolumeLabel.setTypeface(boldFont);
 
         final int lastVolume = sharedPrefs.getInt(PREF_LAST_VOLUME, PREF_LAST_VOLUME_DEFAULT);
@@ -201,7 +203,7 @@ public class PlayerFragment extends FragmentBase {
             case AudioStateEvent.STATE_TIMEOUT: {
                 // This will be triggered if device discovery has failed
                 getMainActivity().dismissProgress();
-                getMainActivity().makeToast(getString(R.string.no_connection_message), Toast.LENGTH_LONG);
+                mErrorLabel.setVisibility(View.VISIBLE);
                 mChannelText.setText(getString(R.string.channels_not_loaded));
                 break;
             }
@@ -247,6 +249,9 @@ public class PlayerFragment extends FragmentBase {
                     }
                 }
             }
+        }
+        if (mChannels.size() > 0) {
+            mErrorLabel.setVisibility(View.GONE);
         }
         if (!mChannelsLoaded) {
             setupChannels();

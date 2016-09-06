@@ -4,4 +4,5 @@
     <color name="afetch_lightgrey">#FFE7E7E7</color>
     <color name="afetch_darkgrey">#FF333333</color>
     <color name="afetch_orange">#FFCC6600</color>
+    <color name="afetch_red">#F00000</color>
 </resources>

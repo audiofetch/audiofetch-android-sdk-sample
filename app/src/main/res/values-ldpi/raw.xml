@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="channel_name_font_size_5_chars" format="float" type="raw">3.0</item>
+    <item name="channel_name_font_size_4_chars" format="float" type="raw">5.0</item>
+    <item name="channel_name_font_size_3_chars" format="float" type="raw">6.0</item>
+</resources>

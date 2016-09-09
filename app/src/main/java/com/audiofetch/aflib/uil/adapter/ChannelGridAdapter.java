@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
+import com.audiofetch.afaudiolib.bll.helpers.LG;
 import com.audiofetch.afaudiolib.dal.Channel;
 import com.audiofetch.aflib.R;
 import com.audiofetch.aflib.uil.fragment.PlayerFragment;
@@ -24,6 +25,7 @@ public class ChannelGridAdapter extends BaseAdapter {
     /*==============================================================================================
     // DATA MEMBERS
     //============================================================================================*/
+    public static final String TAG = ChannelGridAdapter.class.getSimpleName();
 
     protected List<Channel> mApbChannels = new ArrayList<>();
     protected LayoutInflater mInflater;
@@ -116,24 +118,29 @@ public class ChannelGridAdapter extends BaseAdapter {
             }
             final Channel curChannel = (Channel) getItem(position);
             String name = (null != curChannel) ? curChannel.getNameOrChannel().toUpperCase() : null;
-            if (name != null) {
+            if (null != name && null != mContext) {
                 int nameLen = name.length();
                 if (nameLen > 5) {
                     nameLen = 5;
                     name = name.substring(0,5);
                 }
                 holder.channelNumber.setText(name);
+                TypedValue out = new TypedValue();
+                mContext.getResources().getValue(R.raw.channel_name_font_size_3_chars, out, true);
+
                 switch(nameLen) {
                     case 4:
-                        holder.channelNumber.setTextSize(TypedValue.COMPLEX_UNIT_PT, 8.0f);
+                        mContext.getResources().getValue(R.raw.channel_name_font_size_4_chars, out, true);
                         break;
                     case 5:
-                        holder.channelNumber.setTextSize(TypedValue.COMPLEX_UNIT_PT, 6.0f);
+                        mContext.getResources().getValue(R.raw.channel_name_font_size_5_chars, out, true);
                         break;
                     default:
-                        holder.channelNumber.setTextSize(TypedValue.COMPLEX_UNIT_PT, 9.0f);
                         break;
                 }
+                float textSize = out.getFloat();
+                LG.Info(TAG, "Channel name text size is: %f", textSize);
+                holder.channelNumber.setTextSize(TypedValue.COMPLEX_UNIT_PT, textSize);
             }
             if (null != holder) {
                 holder.channelLabel.setTypeface(boldFont);

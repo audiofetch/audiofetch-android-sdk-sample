@@ -2,8 +2,8 @@ apply plugin: 'com.android.application'
 
 
 String APP_PACKAGE_NAME = 'com.audiofetch.aflib'
-String VERSION_NAME = '1.0.7'
-int VERSION_CODE = 2
+String VERSION_NAME = '1.0.8'
+int VERSION_CODE = 3
 
 android {
     compileSdkVersion 23
@@ -40,6 +40,10 @@ android {
         exclude 'META-INF/NOTICE'
         exclude 'META-INF/LICENSE'
         exclude 'META-INF/services/javax.annotation.processing.Processor'
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
     }
 }
 

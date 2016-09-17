@@ -179,45 +179,6 @@ public class MainActivity extends ActivityBase {
         LG.Verbose(TAG, "AudioFocus gained: %s", (AudioManager.AUDIOFOCUS_GAIN == event.focusChange));
     }
 
-    /**
-     * Triggered by AudioController when a preference pertaining to audio has changed.
-     *
-     * Buffer size is already set by audio controller on the apb before this is called.
-     *
-     * This is not required to be implemented by SDK clients, but is useful if offering music
-     *
-     * @param event
-     */
-    @SuppressWarnings("unused")
-    @Subscribe
-    public void onAudioPreferenceChangeEvent(final AudioPreferenceChangeEvent event) {
-        if (null != event && null != event.key) {
-            if (event.key.equals(AudioController.PREF_BUFFER_SIZE_MS)) {
-                final String bufferSize = PREFS.getString(event.key, String.valueOf(AudioController.PREF_BUFFER_SIZE_MS_DEFAULT));
-                try {
-                    final String[] opts = getResources().getStringArray(R.array.pref_buffer_choice_values);
-                    final int DEFAULT_MUSIC_BUFSZ = 150,
-                            MUSIC_BUFFER_SIZE = (null != opts && opts.length >= 2) ? Integer.valueOf(opts[1]) : DEFAULT_MUSIC_BUFSZ,
-                            bufferSizeMs = Integer.valueOf(bufferSize);
-
-                    if (bufferSizeMs > 0) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                final String[] values = getResources().getStringArray(R.array.pref_buffer_choice_names);
-                                final String mode = (MUSIC_BUFFER_SIZE == bufferSizeMs) ? values[1] : values[0],
-                                        msg = String.format(getString(R.string.listening_mode_set), mode);
-                                makeToast(msg, Toast.LENGTH_LONG);
-                            }
-                        });
-                    }
-                } catch (NumberFormatException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }
-    }
-
     /*==============================================================================================
     // PUBLIC METHODS
     //============================================================================================*/

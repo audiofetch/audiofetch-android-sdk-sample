@@ -22,10 +22,10 @@ android {
 //    }
     signingConfigs {
         appRelease {
-            storeFile file('cert/app.release.jks')
-            storePassword 'timnpais23!'
-            keyAlias 'waio'
-            keyPassword 'timnpais23!#'
+            storeFile file('cert/release.jks')
+            storePassword 'imposib!e'
+            keyAlias 'adsa'
+            keyPassword 'fuzzy'
         }
 
     }

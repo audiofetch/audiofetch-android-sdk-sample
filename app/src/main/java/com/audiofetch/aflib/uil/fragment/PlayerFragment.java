@@ -3,7 +3,9 @@ package com.audiofetch.aflib.uil.fragment;
 
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.res.AssetManager;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 
@@ -20,6 +22,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.audiofetch.afaudiolib.bll.event.AudioStateEvent;
+import com.audiofetch.afaudiolib.bll.helpers.PREFS;
 import com.audiofetch.aflib.uil.adapter.ChannelGridAdapter;
 import com.audiofetch.aflib.uil.activity.MainActivity;
 import com.audiofetch.aflib.uil.fragment.base.FragmentBase;
@@ -59,6 +62,8 @@ public class PlayerFragment extends FragmentBase {
 
     public final static String PREF_LAST_VOLUME = "lastVolume";
     public final static int PREF_LAST_VOLUME_DEFAULT = 65;
+
+    public final static String PREF_BATTERY_PERMISSION_REQUESTED = "prefIgnoreBatteryOptimizeRequested";
 
     protected static int mCurrentChannel = 0;
     protected boolean mConnectionMsgShown = false;
@@ -102,13 +107,20 @@ public class PlayerFragment extends FragmentBase {
         mVolumeLabel = (TextView) mView.findViewById(R.id.label_volume);
         mErrorLabel = (TextView) mView.findViewById(R.id.label_error);
 
-        final Typeface normalFont = Typeface.createFromAsset(getActivity().getAssets(), PlayerFragment.FONT_PRIMARY),
-                boldFont = Typeface.createFromAsset(getActivity().getAssets(), PlayerFragment.FONT_BOLD);
+        final AssetManager assetMgr = getActivity().getAssets();
+        final Typeface normalFont = Typeface.createFromAsset(assetMgr, PlayerFragment.FONT_PRIMARY),
+                lightFont = Typeface.createFromAsset(assetMgr, PlayerFragment.FONT_SECONDARY),
+                boldFont = Typeface.createFromAsset(assetMgr, PlayerFragment.FONT_BOLD);
 
-        mChannelText.setTypeface(normalFont);
+        final int channelColor = getColor(R.color.afetch_black);
+        mChannelText.setTypeface(boldFont);
+        mChannelText.setTextColor(channelColor);
+
         mChannelLabel.setTypeface(normalFont);
+        mChannelLabel.setTextColor(channelColor);
+
         mErrorLabel.setTypeface(normalFont);
-        mVolumeLabel.setTypeface(boldFont);
+        mVolumeLabel.setTypeface(lightFont);
 
         final int lastVolume = sharedPrefs.getInt(PREF_LAST_VOLUME, PREF_LAST_VOLUME_DEFAULT);
         mVolumeControl = (SeekBar) mView.findViewById(R.id.volume_slider);
@@ -205,6 +217,7 @@ public class PlayerFragment extends FragmentBase {
                 getMainActivity().dismissProgress();
                 mErrorLabel.setVisibility(View.VISIBLE);
                 mChannelText.setText(getString(R.string.channels_not_loaded));
+                checkForIgnoringBatteryOptimizations();
                 break;
             }
             case AudioStateEvent.STATE_ERROR:
@@ -248,6 +261,13 @@ public class PlayerFragment extends FragmentBase {
                         mChannels.add(new Channel(i.intValue(), i.intValue() + 1, String.format("%d", i.intValue() + 1)));
                     }
                 }
+
+                mUiHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        checkForIgnoringBatteryOptimizations();
+                    }
+                }, 3000);
             }
         }
         if (mChannels.size() > 0) {
@@ -340,7 +360,6 @@ public class PlayerFragment extends FragmentBase {
     // INSTANCE METHODS
     //============================================================================================*/
 
-
     /**
      * Should be called by calling activity to set volume by passing event from the activity's onKeyDown event handler
      *
@@ -370,6 +389,23 @@ public class PlayerFragment extends FragmentBase {
                 mChannelText.setText(mChannels.get(0).getNameOrChannel());
             }
             mChannelsLoaded = true;
+        }
+    }
+
+    /**
+     * Checks to ensure that doze mode is disabled.
+     */
+    protected void checkForIgnoringBatteryOptimizations() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            final boolean hasRequestedPerms = PREFS.getBoolean(PREF_BATTERY_PERMISSION_REQUESTED, false);
+            if (!hasRequestedPerms) {
+                getMainActivity().alert(R.string.battery_optimization_title, R.string.battery_optimization_msg, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        getMainActivity().whitelistAppForBattery();
+                    }
+                });
+            }
         }
     }
 

@@ -205,4 +205,11 @@ public class MainActivity extends ActivityBase {
         }
         switchContent(mPlayerFragment, PlayerFragment.TAG);
     }
+
+    /**
+     * Whitelists the app for ignoring battery optimiztions.
+     */
+    public void whitelistAppForBattery() {
+        getAudioController().whitelistAppForBatteryOptimizations(this);
+    }
 }

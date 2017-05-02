@@ -7,7 +7,7 @@ int VERSION_CODE = 3
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "23.0.2"
+    buildToolsVersion '25.0.0'
 
     defaultConfig {
         applicationId APP_PACKAGE_NAME

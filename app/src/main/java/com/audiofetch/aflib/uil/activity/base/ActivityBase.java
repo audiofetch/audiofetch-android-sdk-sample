@@ -168,7 +168,7 @@ public class ActivityBase extends Activity {
      */
     @Override
     public void onBackPressed() {
-        this.exitApplicationClearHistory();
+        this.showDeviceHomeScreen();
     }
 
     @Override
@@ -317,7 +317,7 @@ public class ActivityBase extends Activity {
                 @Override
                 public void run() {
                     if (null == mProgressDialog) {
-                        mProgressDialog = ProgressDialog.show(ActivityBase.this, msg, null, true, false);
+                        mProgressDialog = ProgressDialog.show(ActivityBase.this, null, msg, true, false);
                     } else {
                         mProgressDialog.setTitle(msg);
                     }
@@ -349,6 +349,50 @@ public class ActivityBase extends Activity {
                 .setMessage(msgResId)
                 .setPositiveButton(android.R.string.ok, okCallback);
         builder.create().show();
+    }
+
+    /**
+     * Shows an confirm dialog, think javascript:window.confirm
+     *
+     * @param titleResId
+     * @param msgResId
+     * @param positiveCallback
+     * @param negativeListener
+     */
+    public void confirm(final int titleResId, final int msgResId, final DialogInterface.OnClickListener positiveCallback, final DialogInterface.OnClickListener negativeListener) {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle(titleResId)
+                .setMessage(msgResId)
+                .setPositiveButton(R.string.yes, positiveCallback)
+                .setNegativeButton(R.string.no, negativeListener);
+        builder.create().show();
+    }
+
+    /**
+     * Shows an confirm dialog, think javascript:window.confirm
+     *
+     * @param titleResId
+     * @param msgResId
+     * @param positiveCallback
+     */
+    public void confirm(final int titleResId, final int msgResId, final DialogInterface.OnClickListener positiveCallback) {
+        confirm(titleResId, msgResId, positiveCallback, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+    }
+
+    /**
+     * Shows an confirm dialog, think javascript:window.confirm
+     *
+     * @param msgResId
+     * @param positiveCallback
+     */
+    public void confirm(final int msgResId, final DialogInterface.OnClickListener positiveCallback) {
+        int titleResId = R.string.confirm;
+        confirm(titleResId, msgResId, positiveCallback);
     }
 
     /*=======================================================

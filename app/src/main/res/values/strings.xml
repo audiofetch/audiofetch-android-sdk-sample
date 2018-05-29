@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">AF SDK Sample</string>
     <string name="app_title">AudioFetch SDK Sample</string>
+    <string name="play_pause">Play / Pause</string>
 
     <string name="fetching_audio">Fetching Audio&#8230;</string>
     <string name="actionbar_title"></string>

@@ -2,38 +2,47 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="48dp"
     android:layout_height="48dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:minHeight="48dp"
     android:minWidth="48dp"
     android:layout_gravity="center"
     android:background="@drawable/rounded_corner">
 
-    <TextView
+    <android.support.v7.widget.AppCompatTextView
         android:id="@+id/label_channel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/label_channel"
-        android:textSize="@dimen/channel_font_size"
+        android:textSize="6pt"
         android:textColor="@color/afetch_blue"
         android:textAlignment="center"
-        android:singleLine="true"
-        android:ellipsize="none"
+        android:lines="1"
+        android:maxLines="1"
         android:layout_gravity="center"
         android:layout_marginTop="2dp"
         android:layout_centerHorizontal="true"
-        android:layout_alignParentTop="true" />
+        android:layout_alignParentTop="true"
+        app:autoSizeTextType="uniform"
+        app:autoSizeStepGranularity="1pt"
+        app:autoSizeMinTextSize="3pt"
+        app:autoSizeMaxTextSize="6pt"/>
 
-    <TextView
+    <android.support.v7.widget.AppCompatTextView
         android:id="@+id/text_channel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="MSNBC"
-        android:textSize="5pt"
+        android:textSize="6pt"
         android:textColor="@color/afetch_blue"
         android:textAlignment="center"
-        android:singleLine="true"
-        android:ellipsize="none"
+        android:lines="1"
+        android:maxLines="1"
         android:layout_gravity="center"
         android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true" />
+        android:layout_centerHorizontal="true"
+        app:autoSizeTextType="uniform"
+        app:autoSizeStepGranularity="1pt"
+        app:autoSizeMinTextSize="3pt"
+        app:autoSizeMaxTextSize="6pt" />
 
 </RelativeLayout>

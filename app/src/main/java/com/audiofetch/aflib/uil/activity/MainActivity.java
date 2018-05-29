@@ -1,29 +1,19 @@
 package com.audiofetch.aflib.uil.activity;
 
-import com.squareup.otto.Subscribe;
-
 import android.content.Intent;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.KeyEvent;
-import android.widget.Toast;
 
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.common.api.GoogleApiClient;
-
-import com.audiofetch.afaudiolib.R;
 import com.audiofetch.afaudiolib.bll.colleagues.AudioController;
-import com.audiofetch.afaudiolib.bll.event.AudioPreferenceChangeEvent;
 import com.audiofetch.afaudiolib.bll.event.AudioFocusEvent;
-import com.audiofetch.afaudiolib.bll.event.AudioTypeEvent;
 import com.audiofetch.afaudiolib.bll.event.ChannelsReceivedEvent;
 import com.audiofetch.afaudiolib.bll.event.WifiStatusEvent;
 import com.audiofetch.afaudiolib.bll.helpers.LG;
-import com.audiofetch.afaudiolib.bll.helpers.PREFS;
-
 import com.audiofetch.aflib.uil.activity.base.ActivityBase;
 import com.audiofetch.aflib.uil.fragment.PlayerFragment;
+import com.squareup.otto.Subscribe;
 
 /**
  * Main Activity for AudioFetch SDK Sample app
@@ -42,7 +32,6 @@ public class MainActivity extends ActivityBase {
 
     protected AudioController mAudioController;
     protected PlayerFragment mPlayerFragment;
-    protected GoogleApiClient mGoogClient;
 
     /*==============================================================================================
     // OVERRIDES AND ONCLICK
@@ -60,16 +49,11 @@ public class MainActivity extends ActivityBase {
         }
 
         mAudioController = getAudioController();
-        mGoogClient = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-
-        if (null != mGoogClient) {
-            mGoogClient.connect();
-        }
         showPlayerFragment();
         afterDelay(new Runnable() {
             @Override
@@ -83,9 +67,6 @@ public class MainActivity extends ActivityBase {
 
     @Override
     protected void onStop() {
-        if (null != mGoogClient) {
-            mGoogClient.disconnect();
-        }
         super.onStop();
     }
 
@@ -165,7 +146,7 @@ public class MainActivity extends ActivityBase {
 
     /**
      * Triggered by AudioController when it's callback AudioManager.onAudioFocusChange is called.
-     *
+     * <p>
      * This is for when focus changes for this app, triggered by the AudioManager.onAudioFocusChange interface
      * which can be caused by an audio interruption, such as an incoming call.
      *

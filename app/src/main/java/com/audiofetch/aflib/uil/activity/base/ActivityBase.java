@@ -1,13 +1,12 @@
 package com.audiofetch.aflib.uil.activity.base;
 
+import android.annotation.TargetApi;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-
-import android.app.ActionBar;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -15,8 +14,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
-
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -26,24 +25,20 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
-import com.audiofetch.aflib.R;
-import com.audiofetch.aflib.uil.activity.ExitActivity;
-
 import com.audiofetch.afaudiolib.bll.app.ApplicationBase;
 import com.audiofetch.afaudiolib.bll.event.ChannelChangedEvent;
 import com.audiofetch.afaudiolib.bll.event.EventBus;
 import com.audiofetch.afaudiolib.bll.helpers.LG;
-
+import com.audiofetch.aflib.R;
+import com.audiofetch.aflib.uil.activity.ExitActivity;
 import com.squareup.otto.Bus;
 
-
-import android.annotation.TargetApi;
-
+import dmax.dialog.SpotsDialog;
 
 
 /**
  * Base activity for AudioFetch SDK Sample app
- *
+ * <p>
  * Hides boilerplate code from MainActivity...
  */
 public class ActivityBase extends Activity {
@@ -59,7 +54,9 @@ public class ActivityBase extends Activity {
     protected static Bus mEventBus;
 
     protected FragmentManager mFragManager;
-    protected ProgressDialog mProgressDialog;
+
+    protected AlertDialog mProgressDialog;
+
     protected Handler mUiHandler = new Handler();
 
     protected boolean mIsRunning;
@@ -80,6 +77,7 @@ public class ActivityBase extends Activity {
     // OVERRIDES
     //============================================================================================*/
 
+    @SuppressWarnings("deprecation")
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -127,7 +125,7 @@ public class ActivityBase extends Activity {
 
             // potential fix for startup crash on 6.x
             mMainContainer.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             LG.Error(TAG, "UNKNOWN ERRROR: ", ex);
         }
     }
@@ -219,6 +217,7 @@ public class ActivityBase extends Activity {
      *
      * @param showing
      */
+    @SuppressWarnings("deprecation")
     public void showActionProgress(final boolean showing) {
         setProgressBarIndeterminate(showing);
         setProgressBarIndeterminateVisibility(showing);
@@ -311,15 +310,15 @@ public class ActivityBase extends Activity {
      *
      * @param msg
      */
+    @SuppressWarnings("deprecation")
     public void showProgress(final String msg) {
         if (null != msg) {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (null == mProgressDialog) {
-                        mProgressDialog = ProgressDialog.show(ActivityBase.this, null, msg, true, false);
-                    } else {
-                        mProgressDialog.setTitle(msg);
+                    if (null == mProgressDialog && !TextUtils.isEmpty(msg)) {
+                        mProgressDialog = new SpotsDialog(ActivityBase.this, msg, R.style.SpotsDialog);
+                        mProgressDialog.show();
                     }
                 }
             });
@@ -332,8 +331,8 @@ public class ActivityBase extends Activity {
     public void dismissProgress() {
         if (mProgressDialog != null) {
             mProgressDialog.dismiss();
+            mProgressDialog = null;
         }
-        mProgressDialog = null;
     }
 
     /**

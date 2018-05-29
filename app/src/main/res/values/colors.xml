@@ -7,5 +7,6 @@
     <color name="afetch_darkgrey">#FF333333</color>
     <color name="afetch_orange">#FFCC6600</color>
     <color name="afetch_red">#F00000</color>
+    <color name="afetch_green">#007700</color>
     <color name="afetch_black">#FF333333</color>
 </resources>

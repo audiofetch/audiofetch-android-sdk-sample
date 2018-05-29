@@ -8,47 +8,45 @@ import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-
 import android.preference.PreferenceManager;
+import android.support.annotation.ColorRes;
+import android.support.annotation.DrawableRes;
+import android.support.v7.widget.AppCompatTextView;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
-
+import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.audiofetch.afaudiolib.bll.event.AudioStateEvent;
-import com.audiofetch.afaudiolib.bll.helpers.PREFS;
-import com.audiofetch.aflib.uil.adapter.ChannelGridAdapter;
-import com.audiofetch.aflib.uil.activity.MainActivity;
-import com.audiofetch.aflib.uil.fragment.base.FragmentBase;
-import com.audiofetch.aflib.R;
-
 import com.audiofetch.afaudiolib.bll.colleagues.AudioController;
-
-import com.audiofetch.afaudiolib.bll.event.ChannelSelectedEvent;
+import com.audiofetch.afaudiolib.bll.event.AudioStateEvent;
 import com.audiofetch.afaudiolib.bll.event.ChannelChangedEvent;
+import com.audiofetch.afaudiolib.bll.event.ChannelSelectedEvent;
 import com.audiofetch.afaudiolib.bll.event.ChannelsReceivedEvent;
 import com.audiofetch.afaudiolib.bll.event.VolumeChangeEvent;
 import com.audiofetch.afaudiolib.bll.event.WifiStatusEvent;
-
 import com.audiofetch.afaudiolib.bll.helpers.LG;
+import com.audiofetch.afaudiolib.bll.helpers.PREFS;
 import com.audiofetch.afaudiolib.dal.Channel;
+import com.audiofetch.aflib.R;
+import com.audiofetch.aflib.uil.activity.MainActivity;
+import com.audiofetch.aflib.uil.adapter.ChannelGridAdapter;
+import com.audiofetch.aflib.uil.fragment.base.FragmentBase;
+import com.squareup.otto.Subscribe;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.squareup.otto.Subscribe;
-
 /**
  * Fragment that contains the player view
  */
-public class PlayerFragment extends FragmentBase {
+public class PlayerFragment extends FragmentBase implements View.OnClickListener {
 
     /*==============================================================================================
     // DATA MEMBERS
@@ -77,15 +75,18 @@ public class PlayerFragment extends FragmentBase {
     protected static AtomicInteger mLoadCount = new AtomicInteger(0);
     protected static boolean mIsBusRegistered;
 
-    protected boolean mChannelsLoaded = false;
+    protected boolean mChannelsLoaded = false,
+            isPaused = false;
 
     protected Handler mUiHandler = new Handler();
 
     protected SeekBar mVolumeControl;
-    protected TextView mChannelText, mChannelLabel, mVolumeLabel, mErrorLabel;
+    protected AppCompatTextView mChannelText;
+    protected TextView mChannelLabel, mVolumeLabel, mErrorLabel;
     protected GridView mGridView;
     protected ChannelGridAdapter mGridViewAdapter;
     protected SharedPreferences sharedPrefs;
+    protected ImageButton mPlayPause;
 
     /*==============================================================================================
     // OVERRIDES
@@ -102,10 +103,11 @@ public class PlayerFragment extends FragmentBase {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         mView = inflater.inflate(R.layout.fragment_player, container, false);
 
-        mChannelText = (TextView) mView.findViewById(R.id.text_current);
-        mChannelLabel = (TextView) mView.findViewById(R.id.label_current);
-        mVolumeLabel = (TextView) mView.findViewById(R.id.label_volume);
-        mErrorLabel = (TextView) mView.findViewById(R.id.label_error);
+        mChannelText = mView.findViewById(R.id.text_current);
+        mChannelLabel = mView.findViewById(R.id.label_current);
+        mVolumeLabel = mView.findViewById(R.id.label_volume);
+        mErrorLabel = mView.findViewById(R.id.label_error);
+        mPlayPause = mView.findViewById(R.id.play_pause_button);
 
         final AssetManager assetMgr = getActivity().getAssets();
         final Typeface normalFont = Typeface.createFromAsset(assetMgr, PlayerFragment.FONT_PRIMARY),
@@ -129,8 +131,10 @@ public class PlayerFragment extends FragmentBase {
         mAudioController.setVolumeControl(mVolumeControl);
         mAudioController.setVolume(lastVolume);
 
-        mGridView = (GridView)mView.findViewById(R.id.channel_grid);
+        mGridView = (GridView) mView.findViewById(R.id.channel_grid);
         mGridView.setOnItemClickListener(mChannelTappedListener);
+
+        mPlayPause.setOnClickListener(this);
 
         if (mChannels.size() > 0) {
             mChannelsLoaded = false; // this will only happen when app is backgrounded with channels already discovered
@@ -188,7 +192,6 @@ public class PlayerFragment extends FragmentBase {
      * DISCOVERING, PLAYING, DROPOUT, TIMEOUT (couldn't find any devices), ERROR (event contains error message)
      *
      * @param event
-     *
      */
     @SuppressWarnings("unused")
     @Subscribe
@@ -257,7 +260,7 @@ public class PlayerFragment extends FragmentBase {
                     if (!mChannels.isEmpty()) {
                         mChannels.clear();
                     }
-                    for(Integer i : mChannelIntegerList) {
+                    for (Integer i : mChannelIntegerList) {
                         mChannels.add(new Channel(i.intValue(), i.intValue() + 1, String.format("%d", i.intValue() + 1)));
                     }
                 }
@@ -280,7 +283,7 @@ public class PlayerFragment extends FragmentBase {
 
     /**
      * This is triggered multiple places in the app, but typically by the channel buttons
-     *
+     * <p>
      * Note:  in Android Studio -
      * perform a right-click and find usage on ChannelSelectedEvent to find its usages
      *
@@ -322,7 +325,7 @@ public class PlayerFragment extends FragmentBase {
                     public void run() {
                         try {
                             getMainActivity().dismissProgress();
-                        } catch(Exception e) {
+                        } catch (Exception e) {
                             LG.Error(TAG, "WIFI STATUS ERROR:", e);
                         }
                     }
@@ -334,7 +337,7 @@ public class PlayerFragment extends FragmentBase {
                         getMainActivity().showWifiSettings();
                     }
                 });
-            } catch(Exception ex) {
+            } catch (Exception ex) {
                 LG.Error(TAG, ex.getMessage(), ex);
             }
         } else {
@@ -420,7 +423,7 @@ public class PlayerFragment extends FragmentBase {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             if (null != mGridViewAdapter) {
-                final Channel selectedChannel = (Channel)mGridViewAdapter.getItem(position);
+                final Channel selectedChannel = (Channel) mGridViewAdapter.getItem(position);
                 if (null != selectedChannel) {
                     final String name = selectedChannel.getNameOrChannel().toUpperCase();
                     mChannelText.setText(name);
@@ -433,4 +436,24 @@ public class PlayerFragment extends FragmentBase {
             }
         }
     };
+
+    @Override
+    public void onClick(View view) {
+        isPaused = !isPaused;
+        @ColorRes final int bgColor = (isPaused) ? R.color.afetch_green : R.color.afetch_orange;
+        @DrawableRes final int img = (isPaused) ? R.drawable.ic_play : R.drawable.ic_pause;
+        mPlayPause.setBackgroundResource(bgColor);
+        mPlayPause.setImageResource(img);
+
+        mUiHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (isPaused) {
+                    mAudioController.pauseAudio();
+                } else {
+                    mAudioController.restartAudio();
+                }
+            }
+        }, 250);
+    }
 }

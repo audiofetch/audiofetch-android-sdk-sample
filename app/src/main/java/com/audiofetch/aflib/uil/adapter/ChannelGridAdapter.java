@@ -2,12 +2,12 @@ package com.audiofetch.aflib.uil.adapter;
 
 import android.content.Context;
 import android.graphics.Typeface;
+import android.support.v7.widget.AppCompatTextView;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.TextView;
 
 import com.audiofetch.afaudiolib.bll.helpers.LG;
 import com.audiofetch.afaudiolib.dal.Channel;
@@ -90,7 +90,7 @@ public class ChannelGridAdapter extends BaseAdapter {
     public long getItemId(int position) {
         long itemId = 0;
         if (null != getItem(position)) {
-            itemId = ((Channel)getItem(position)).channel;
+            itemId = ((Channel) getItem(position)).channel;
         }
         return itemId;
     }
@@ -110,11 +110,11 @@ public class ChannelGridAdapter extends BaseAdapter {
             if (null == convertView) {
                 holder = new GridItemViewHolder();
                 convertView = mInflater.inflate(R.layout.channel_grid_item, null);
-                holder.channelLabel = (TextView)convertView.findViewById(R.id.label_channel);
-                holder.channelNumber = (TextView)convertView.findViewById(R.id.text_channel);
+                holder.channelLabel = convertView.findViewById(R.id.label_channel);
+                holder.channelNumber = convertView.findViewById(R.id.text_channel);
                 convertView.setTag(holder);
             } else {
-                holder = (GridItemViewHolder)convertView.getTag();
+                holder = (GridItemViewHolder) convertView.getTag();
             }
             final Channel curChannel = (Channel) getItem(position);
             String name = (null != curChannel) ? curChannel.getNameOrChannel().toUpperCase() : null;
@@ -122,23 +122,21 @@ public class ChannelGridAdapter extends BaseAdapter {
                 int nameLen = name.length();
                 if (nameLen > 5) {
                     nameLen = 5;
-                    name = name.substring(0,5);
+                    name = name.substring(0, 5);
                 }
                 holder.channelNumber.setText(name);
-                TypedValue out = new TypedValue();
-                mContext.getResources().getValue(R.raw.channel_name_font_size_3_chars, out, true);
+                float textSize = 9.0f;
 
-                switch(nameLen) {
+                switch (nameLen) {
                     case 4:
-                        mContext.getResources().getValue(R.raw.channel_name_font_size_4_chars, out, true);
+                        textSize = 8.0f;
                         break;
                     case 5:
-                        mContext.getResources().getValue(R.raw.channel_name_font_size_5_chars, out, true);
+                        textSize = 6.0f;
                         break;
                     default:
                         break;
                 }
-                float textSize = out.getFloat();
                 LG.Info(TAG, "Channel name text size is: %f", textSize);
                 holder.channelNumber.setTextSize(TypedValue.COMPLEX_UNIT_PT, textSize);
             }
@@ -152,7 +150,7 @@ public class ChannelGridAdapter extends BaseAdapter {
                 final int backgroundResId = (getSelectedPosition() != position) ? R.drawable.rounded_corner : R.drawable.rounded_corner_selected;
                 convertView.setBackgroundResource(backgroundResId);
             }
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
         return convertView;
@@ -165,6 +163,7 @@ public class ChannelGridAdapter extends BaseAdapter {
 
     /**
      * Returns the selected position
+     *
      * @return int
      */
     public int getSelectedPosition() {
@@ -202,7 +201,7 @@ public class ChannelGridAdapter extends BaseAdapter {
      * Holder pattern class for adapter
      */
     static class GridItemViewHolder {
-        public TextView channelLabel;
-        public TextView channelNumber;
+        public AppCompatTextView channelLabel;
+        public AppCompatTextView channelNumber;
     }
 }

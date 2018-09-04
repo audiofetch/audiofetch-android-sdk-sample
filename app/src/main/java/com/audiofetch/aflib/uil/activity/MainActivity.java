@@ -29,7 +29,7 @@ public class MainActivity extends ActivityBase {
     /**
      * Set this to the channel, on which, you want the player to start playing audio.
      */
-    public static final int STARTING_CHANNEL = 0;
+    public static final int STARTING_CHANNEL = 1;
 
     /*==============================================================================================
     // DATA MEMBERS

@@ -125,13 +125,13 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
         mVolumeLabel.setTypeface(lightFont);
 
         final int lastVolume = sharedPrefs.getInt(PREF_LAST_VOLUME, PREF_LAST_VOLUME_DEFAULT);
-        mVolumeControl = (SeekBar) mView.findViewById(R.id.volume_slider);
+        mVolumeControl = mView.findViewById(R.id.volume_slider);
         mVolumeControl.setProgress(lastVolume);
 
         mAudioController.setVolumeControl(mVolumeControl);
         mAudioController.setVolume(lastVolume);
 
-        mGridView = (GridView) mView.findViewById(R.id.channel_grid);
+        mGridView = mView.findViewById(R.id.channel_grid);
         mGridView.setOnItemClickListener(mChannelTappedListener);
 
         mPlayPause.setOnClickListener(this);
@@ -296,7 +296,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
             if (event.fromClick && !event.fromChannelControl) { // handles tapping on a side channel, or same channel in some cases
                 return;
             }
-            if (event != null && event.channel > -1) {
+            if (null != event && event.channel > -1) {
                 mCurrentChannel = event.channel;
                 mAudioController.setChannel(mCurrentChannel);
                 MainActivity.getBus().post(new ChannelChangedEvent(mCurrentChannel));
@@ -386,10 +386,11 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
      */
     public synchronized void setupChannels() {
         if (!mChannelsLoaded) {
-            mGridViewAdapter = new ChannelGridAdapter(mChannels, getActivity());
+            mCurrentChannel = getMainActivity().getAudioController().getCurrentChannel();
+            mGridViewAdapter = new ChannelGridAdapter(mChannels, mCurrentChannel, getActivity());
             mGridView.setAdapter(mGridViewAdapter);
-            if (mChannels.size() > 0) {
-                mChannelText.setText(mChannels.get(0).getNameOrChannel());
+            if (mChannels.size() > mCurrentChannel) {
+                mChannelText.setText(mChannels.get(mCurrentChannel).getNameOrChannel());
             }
             mChannelsLoaded = true;
         }
@@ -451,7 +452,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                 if (isPaused) {
                     mAudioController.pauseAudio();
                 } else {
-                    mAudioController.restartAudio();
+                    mAudioController.startAudio();
                 }
             }
         }, 250);

@@ -31,7 +31,7 @@ public class ChannelGridAdapter extends BaseAdapter {
     protected LayoutInflater mInflater;
     protected Context mContext;
     protected Typeface normalFont, boldFont;
-    protected int mSelectedPosition = 0;
+    protected int mSelectedPosition;
 
     /*==============================================================================================
     // CONSTRUCTOR
@@ -41,10 +41,12 @@ public class ChannelGridAdapter extends BaseAdapter {
      * ChannelGridAdapter
      *
      * @param channels
+     * @param selectedChannel
      * @param ctx
      */
-    public ChannelGridAdapter(final List<Channel> channels, final Context ctx) {
+    public ChannelGridAdapter(final List<Channel> channels, final int selectedChannel, final Context ctx) {
         setChannels(channels);
+        mSelectedPosition = selectedChannel;
         mContext = ctx;
         mInflater = LayoutInflater.from(mContext);
         normalFont = Typeface.createFromAsset(ctx.getAssets(), PlayerFragment.FONT_PRIMARY);
@@ -147,7 +149,9 @@ public class ChannelGridAdapter extends BaseAdapter {
 
             }
             if (null != convertView) {
-                final int backgroundResId = (getSelectedPosition() != position) ? R.drawable.rounded_corner : R.drawable.rounded_corner_selected;
+                final int selectedPosition = getSelectedPosition();
+                LG.Info(TAG, "POSITION IS: %d", position);
+                final int backgroundResId = (selectedPosition != position) ? R.drawable.rounded_corner : R.drawable.rounded_corner_selected;
                 convertView.setBackgroundResource(backgroundResId);
             }
         } catch (Exception ex) {

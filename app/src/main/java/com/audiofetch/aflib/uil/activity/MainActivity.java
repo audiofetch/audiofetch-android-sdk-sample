@@ -26,6 +26,11 @@ public class MainActivity extends ActivityBase {
 
     public static final String TAG = MainActivity.class.getSimpleName();
 
+    /**
+     * Set this to the channel, on which, you want the player to start playing audio.
+     */
+    public static final int STARTING_CHANNEL = 0;
+
     /*==============================================================================================
     // DATA MEMBERS
     //============================================================================================*/
@@ -59,7 +64,7 @@ public class MainActivity extends ActivityBase {
             @Override
             public void run() {
                 if (!getAudioController().isAudioPlaying()) {
-                    getAudioController().startAudio();
+                    getAudioController().startAudio(STARTING_CHANNEL);
                 }
             }
         }, 500);

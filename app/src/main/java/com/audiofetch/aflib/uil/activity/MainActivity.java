@@ -5,15 +5,31 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.KeyEvent;
+import android.os.Build;
+import android.os.PowerManager;
+import android.provider.Settings;
+import android.annotation.TargetApi;
 
+import com.audiofetch.aflib.uil.activity.base.ActivityBase;
+import com.audiofetch.aflib.uil.fragment.PlayerFragment;
+
+/*bye
 import com.audiofetch.afaudiolib.bll.colleagues.AudioController;
 import com.audiofetch.afaudiolib.bll.event.AudioFocusEvent;
 import com.audiofetch.afaudiolib.bll.event.ChannelsReceivedEvent;
 import com.audiofetch.afaudiolib.bll.event.WifiStatusEvent;
 import com.audiofetch.afaudiolib.bll.helpers.LG;
-import com.audiofetch.aflib.uil.activity.base.ActivityBase;
-import com.audiofetch.aflib.uil.fragment.PlayerFragment;
 import com.squareup.otto.Subscribe;
+*/
+
+// Audiofetch API
+import com.audiofetch.afaudiolib.bll.app.AFAudioService;
+import com.audiofetch.afaudiolib.api.AfApi;
+import com.audiofetch.afaudiolib.api.ApiMessenger;
+import io.reactivex.Flowable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+
+
 
 /**
  * Main Activity for AudioFetch SDK Sample app
@@ -35,7 +51,6 @@ public class MainActivity extends ActivityBase {
     // DATA MEMBERS
     //============================================================================================*/
 
-    protected AudioController mAudioController;
     protected PlayerFragment mPlayerFragment;
 
     /*==============================================================================================
@@ -49,11 +64,15 @@ public class MainActivity extends ActivityBase {
         final String action = (null != intent) ? intent.getAction() : null;
         if (null != action) {
             Uri data = intent.getData();
-            LG.Verbose(TAG, "App started from intent: %s with data: %s", action, data);
+            //hi?LG.Verbose(TAG, "App started from intent: %s with data: %s", action, data);
             // TODO: add other deeplinks besides the default as needed
         }
 
-        mAudioController = getAudioController();
+        //mcj hi if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        requestIgnoreBatteryOptimizations();
+        //mcj hi}
+
+
     }
 
     @Override
@@ -63,9 +82,9 @@ public class MainActivity extends ActivityBase {
         afterDelay(new Runnable() {
             @Override
             public void run() {
-                if (!getAudioController().isAudioPlaying()) {
-                    getAudioController().startAudio(STARTING_CHANNEL);
-                }
+                //bye if (!getAudioController().isAudioPlaying()) {
+                //bye     getAudioController().startAudio(STARTING_CHANNEL);
+                //bye }
             }
         }, 500);
     }
@@ -104,7 +123,7 @@ public class MainActivity extends ActivityBase {
 
     @Override
     protected void onDestroy() { // not called every time
-        mAudioController.onDestroy();
+        //bye mAudioController.onDestroy();
         super.onDestroy();
     }
 
@@ -114,23 +133,60 @@ public class MainActivity extends ActivityBase {
      */
     @Override
     public void exitApplicationClearHistory() {
-        mAudioController.onDestroy();
+        //bye mAudioController.onDestroy();
         super.exitApplicationClearHistory();
     }
 
-    /*==============================================================================================
-    // BUS EVENTS
-    //============================================================================================*/
+    // ---------------------------------------------------
+    // AudioFetch API Messages
+    // ---------------------------------------------------
+
+
+    @Override
+    public void doSubscriptions() {
+        //hi? LG.Debug(TAG, "Listening for messages.");
+        AFAudioService.api().outMsgs()
+            .asFlowable()
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                msg -> {
+                  if (msg instanceof AfApi.ChannelsReceivedMsg) {
+                    AfApi.ChannelsReceivedMsg  crMsg = (AfApi.ChannelsReceivedMsg) msg;
+                    onChannelsReceivedEvent(crMsg);
+                  }
+                  else if (msg instanceof AfApi.WifiStatusMsg) {
+                    AfApi.WifiStatusMsg  pMsg = (AfApi.WifiStatusMsg) msg;
+                    onWifiStatusEvent(pMsg);
+                  }
+                  else if (msg instanceof AfApi.AudioFocusMsg) {
+                    AfApi.AudioFocusMsg  pMsg = (AfApi.AudioFocusMsg) msg;
+                    onAudioFocusEvent(pMsg);
+                  }
+                  /* mcj  hi?
+                  else if (msg instanceof AfApi.AudioReadyMsg) {
+                    AfApi.AudioReadyMsg  pMsg = (AfApi.AudioReadyMsg) msg;
+                    onAudioReadyEvent(pMsg);
+                  }
+                  else if (msg instanceof AfApi.AudioPreferenceChangeMsg) {
+                    AfApi.AudioPreferenceChangeMsg  pMsg = (AfApi.AudioPreferenceChangeMsg) msg;
+                    onAudioPreferenceChangeEvent(pMsg);
+                  }
+                  else if (msg instanceof AfApi.AudioStateMsg) {
+                    AfApi.AudioStateMsg  pMsg = (AfApi.AudioStateMsg) msg;
+                    onAudioStateEvent(pMsg);
+                  }
+                  */
+
+                });
+    }
 
     /**
      * Triggered by WifiController via AudioController
      *
      * @param event
      */
-    @SuppressWarnings("unused")
-    @Subscribe
-    public void onWifiStatusEvent(final WifiStatusEvent event) {
-        LG.Info(TAG, "Event is: %s", event);
+    public void onWifiStatusEvent(final AfApi.WifiStatusMsg msg) {
+        //hi? LG.Info(TAG, "Event is: %s", event);
     }
 
     /**
@@ -138,9 +194,7 @@ public class MainActivity extends ActivityBase {
      *
      * @param event
      */
-    @SuppressWarnings("unused")
-    @Subscribe
-    public void onChannelsReceivedEvent(final ChannelsReceivedEvent event) {
+    public void onChannelsReceivedEvent(final AfApi.ChannelsReceivedMsg msg) {
         afterDelay(new Runnable() {
             @Override
             public void run() {
@@ -159,28 +213,11 @@ public class MainActivity extends ActivityBase {
      * @link http://developer.android.com/reference/android/media/AudioManager.OnAudioFocusChangeListener.html
      * @see AudioManager
      */
-    @SuppressWarnings("unused")
-    @Subscribe
-    public void onAudioFocusEvent(final AudioFocusEvent event) {
-        LG.Verbose(TAG, "AudioFocus gained: %s", (AudioManager.AUDIOFOCUS_GAIN == event.focusChange));
+    public void onAudioFocusEvent(final AfApi.AudioFocusMsg msg) {
+        //hi? LG.Verbose(TAG, "AudioFocus gained: %s", (AudioManager.AUDIOFOCUS_GAIN == msg.focusChange));
     }
 
-    /*==============================================================================================
-    // PUBLIC METHODS
-    //============================================================================================*/
 
-    /**
-     * Returns the audio controller
-     *
-     * @return
-     */
-    public synchronized AudioController getAudioController() {
-        if (null == mAudioController) {
-            AudioController.init(this);
-            mAudioController = AudioController.get();
-        }
-        return mAudioController;
-    }
 
     /**
      * Pops off any fragments that are covering the player
@@ -192,10 +229,27 @@ public class MainActivity extends ActivityBase {
         switchContent(mPlayerFragment, PlayerFragment.TAG);
     }
 
-    /**
-     * Whitelists the app for ignoring battery optimiztions.
-     */
-    public void whitelistAppForBattery() {
-        getAudioController().whitelistAppForBatteryOptimizations(this);
+    //bye /**
+    //bye  * Whitelists the app for ignoring battery optimiztions.
+    //bye  */
+    //bye public void whitelistAppForBattery() {
+    //bye    getAudioController().whitelistAppForBatteryOptimizations(this);
+    //bye }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    public void requestIgnoreBatteryOptimizations() {
+        final Intent intent = new Intent();
+        final String packageName = getPackageName();
+        final PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+            intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:" + packageName));
+            startActivity(intent);
+        }
+//        else {
+//            intent.setAction(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+//        }
     }
+
+
 }

@@ -25,16 +25,28 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
-import com.audiofetch.afaudiolib.bll.app.ApplicationBase;
-import com.audiofetch.afaudiolib.bll.event.ChannelChangedEvent;
-import com.audiofetch.afaudiolib.bll.event.EventBus;
+import android.content.ServiceConnection;
+import android.content.ComponentName;
+import android.os.IBinder;
+
+import com.audiofetch.aflib.bll.app.ApplicationBase;
+//bye import com.audiofetch.afaudiolib.bll.event.ChannelChangedEvent;
+//bye import com.audiofetch.afaudiolib.bll.event.EventBus;
 import com.audiofetch.afaudiolib.bll.helpers.LG;
 import com.audiofetch.aflib.R;
 import com.audiofetch.aflib.uil.activity.ExitActivity;
-import com.squareup.otto.Bus;
+//bye import com.squareup.otto.Bus;
+
 
 import dmax.dialog.SpotsDialog;
 
+
+// Af API communication
+import com.audiofetch.afaudiolib.bll.app.AFAudioService;
+import com.audiofetch.afaudiolib.api.AfApi;
+import com.audiofetch.afaudiolib.api.ApiMessenger;
+import io.reactivex.Flowable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 
 /**
  * Base activity for AudioFetch SDK Sample app
@@ -51,8 +63,6 @@ public class ActivityBase extends Activity {
 
     public static final int MAIN_CONTAINER_RESID = R.id.main_container;
 
-    protected static Bus mEventBus;
-
     protected FragmentManager mFragManager;
 
     protected AlertDialog mProgressDialog;
@@ -62,16 +72,12 @@ public class ActivityBase extends Activity {
     protected boolean mIsRunning;
     protected FrameLayout mMainContainer;
 
-    /*==============================================================================================
-    // STATIC METHODS
-    //============================================================================================*/
+    protected AFAudioService mAFAudioSvc;
+    protected boolean mIsAFAudioSvcBound = false;
+    protected ServiceConnection mAFAudioSvcConn;
+    protected AfApi mAfApi = null;
 
-    public static Bus getBus() {
-        if (null == mEventBus) {
-            mEventBus = EventBus.get();
-        }
-        return mEventBus;
-    }
+
 
     /*==============================================================================================
     // OVERRIDES
@@ -84,7 +90,6 @@ public class ActivityBase extends Activity {
 
         // handler, bus and frag manager
         mUiHandler = new Handler();
-        mEventBus = getBus();
         mFragManager = getFragmentManager();
 
         // config window with an action bar and a progress spinner in top left corner (hidden)
@@ -128,16 +133,20 @@ public class ActivityBase extends Activity {
         } catch (Exception ex) {
             LG.Error(TAG, "UNKNOWN ERRROR: ", ex);
         }
+
+        // Start the AudioFetch Service
+        startAFAudioService();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        mEventBus.register(this);
+        //bye mEventBus.register(this);
         mUiHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                mEventBus.post(new ChannelChangedEvent(0));
+                //bye mEventBus.post(new ChannelChangedEvent(0));
+                AFAudioService.api().outMsgs().send( new AfApi.ChannelChangedMsg(0));
             }
         }, 1010);
     }
@@ -157,9 +166,137 @@ public class ActivityBase extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        mEventBus.unregister(this);
+        //mcj bye mEventBus.unregister(this);
         dismissProgress();
     }
+
+
+    /**
+     * Start the {@see AFAudioService}
+     * @return
+     */
+    protected ActivityBase startAFAudioService() {
+        if (null == mAFAudioSvc) {
+            final Intent serviceIntent = new Intent(this, AFAudioService.class);
+            startService(serviceIntent);
+            bindService(new Intent(this, AFAudioService.class), getAFAudioServiceConnection(), 0);
+        }
+        return this;
+    }
+
+    /**
+     * Stops the {@see AFAudioService}
+     */
+    protected void stopAFAudioService() {
+        if (null != mAFAudioSvc) {
+            mAFAudioSvc.hideNotifcations();
+            if (mIsAFAudioSvcBound && null != mAFAudioSvcConn) {
+                unbindService(mAFAudioSvcConn);
+            }
+            mAFAudioSvc.quit();
+        }
+    }
+
+    /**
+     * Returns a service connection to the AFAudioService, and "wires-up" mAFAudioSvc to point
+     * to the AFAudioService class instance.
+     *
+     * @see AFAudioService
+     * @return
+     */
+    protected ServiceConnection getAFAudioServiceConnection() {
+        if (null == mAFAudioSvcConn) {
+            mAFAudioSvcConn = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName className, IBinder service) {
+                    if (service instanceof AFAudioService.AFAudioBinder) {
+                        LG.Debug(TAG, "AFAudioService connected");
+                        AFAudioService.AFAudioBinder binder = (AFAudioService.AFAudioBinder) service;
+                        mAFAudioSvc = binder.getService();
+
+                        if (null != mAFAudioSvc) {
+                            Context ctx = getApplicationContext();
+                            mAfApi = mAFAudioSvc.api();
+                            // app context must be set before initing audio subsystem
+                            mAfApi.setAppContext( getApplicationContext() );
+                            mAfApi.inMsgs().send( new AfApi.InitAudioSubsystemMsg() );
+
+                            mIsAFAudioSvcBound = true;
+                            mAFAudioSvc.hideNotifcations();
+
+                            //bye mAudioController = mAFAudioSvc.getAudioController();
+                            //bye mAudioController.setVolumeControlStream(ActivityBase.this);
+                            mUiHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    startAFAudioServiceAudio();
+                                }
+                            });
+
+                            LG.Debug(TAG, "In and out API connected.");
+                        
+                            doSubscriptions();
+                            /*
+                            LG.Debug(TAG, "Listening for messages.");
+                            mAfApi.outMsgs()
+                                .asFlowable()
+                                .observeOn(AndroidSchedulers.mainThread())
+                                .subscribe(
+                                    msg -> {
+                                      if (msg instanceof ApiMessenger.ChannelsReceivedMsg) {
+                                        ApiMessenger.ChannelsReceivedMsg  crMsg = (ApiMessenger.ChannelsReceivedMsg) msg;
+                                        channelsReceived(crMsg);
+                                      }
+                                      qqq
+                                    });
+                            */
+                        }
+                    }
+                }
+
+                @Override
+                public void onServiceDisconnected(ComponentName componentName) {
+                    LG.Debug(TAG, "AFAudioService disconnected");
+                    mIsAFAudioSvcBound = false;
+                    mAFAudioSvcConn = null;
+                    mAFAudioSvc = null;
+                }
+            };
+        }
+        return mAFAudioSvcConn;
+    }
+
+    // Subclasses override this to subscribe to api messages
+    public void doSubscriptions() {
+        // subsclasses override
+    }
+
+
+
+    /**
+     * Starts the Audio by starting the AF AudioService
+     *
+     * @return
+     */
+    protected boolean startAFAudioServiceAudio() {
+        boolean started = false;
+        if (null != mAFAudioSvc) {
+            started = true;
+            mUiHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    //mAFAudioSvc.play(); qqq
+                    if ( mAfApi != null) {
+                        mAfApi.inMsgs().send(new AfApi.PlayAudioMsg());
+                    }
+
+                }
+            }, 500);
+        }
+        return started;
+    }
+
+
 
     /**
      * User pressed back on device

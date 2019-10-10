@@ -23,6 +23,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+/* bye
 import com.audiofetch.afaudiolib.bll.colleagues.AudioController;
 import com.audiofetch.afaudiolib.bll.event.AudioStateEvent;
 import com.audiofetch.afaudiolib.bll.event.ChannelChangedEvent;
@@ -30,6 +31,9 @@ import com.audiofetch.afaudiolib.bll.event.ChannelSelectedEvent;
 import com.audiofetch.afaudiolib.bll.event.ChannelsReceivedEvent;
 import com.audiofetch.afaudiolib.bll.event.VolumeChangeEvent;
 import com.audiofetch.afaudiolib.bll.event.WifiStatusEvent;
+import com.squareup.otto.Subscribe;
+*/
+
 import com.audiofetch.afaudiolib.bll.helpers.LG;
 import com.audiofetch.afaudiolib.bll.helpers.PREFS;
 import com.audiofetch.afaudiolib.dal.Channel;
@@ -37,7 +41,16 @@ import com.audiofetch.aflib.R;
 import com.audiofetch.aflib.uil.activity.MainActivity;
 import com.audiofetch.aflib.uil.adapter.ChannelGridAdapter;
 import com.audiofetch.aflib.uil.fragment.base.FragmentBase;
-import com.squareup.otto.Subscribe;
+
+
+// AudioFetch Service API
+import com.audiofetch.afaudiolib.bll.app.AFAudioService;
+import com.audiofetch.afaudiolib.api.AfApi;
+import com.audiofetch.afaudiolib.api.ApiMessenger;
+import io.reactivex.Flowable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,13 +80,13 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     protected boolean mConnectionMsgShown = false;
     protected static List<Integer> mChannelIntegerList = new ArrayList<>();
     protected static List<Channel> mChannels = new ArrayList<>();
-    protected static AudioController mAudioController;
+    // mcj bye protected static AudioController mAudioController;
 
     /**
      * Tracks fragment load at static/app level
      */
     protected static AtomicInteger mLoadCount = new AtomicInteger(0);
-    protected static boolean mIsBusRegistered;
+    // mcj bye protected static boolean mIsBusRegistered;
 
     protected boolean mChannelsLoaded = false,
             isPaused = false;
@@ -95,7 +108,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mAudioController = getMainActivity().getAudioController();
+        //bye mAudioController = getMainActivity().getAudioController();
         sharedPrefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
     }
 
@@ -128,8 +141,9 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
         mVolumeControl = mView.findViewById(R.id.volume_slider);
         mVolumeControl.setProgress(lastVolume);
 
-        mAudioController.setVolumeControl(mVolumeControl);
-        mAudioController.setVolume(lastVolume);
+        //bye mAudioController.setVolumeControl(mVolumeControl);
+        //bye mAudioController.setVolume(lastVolume);
+        //mcj xxx setupVolumeControl
 
         mGridView = mView.findViewById(R.id.channel_grid);
         mGridView.setOnItemClickListener(mChannelTappedListener);
@@ -150,6 +164,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
         final int loadCount = mLoadCount.incrementAndGet();
         final boolean isFirstLoad = (1 == loadCount);
 
+        /* bye
         if (!mIsBusRegistered) {
             try {
                 MainActivity.getBus().register(this);
@@ -160,6 +175,41 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                 LG.Error(TAG, "UNKNOWN BUS ERROR: ", ex);
             }
         }
+        */
+
+        AFAudioService.api().outMsgs()
+            .asFlowable()
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                msg -> {
+                  if (msg instanceof AfApi.ChannelsReceivedMsg) {
+                    AfApi.ChannelsReceivedMsg  crMsg = (AfApi.ChannelsReceivedMsg) msg;
+                    onChannelsReceivedMsg(crMsg);
+                  }
+                  else if (msg instanceof AfApi.WifiStatusMsg) {
+                    AfApi.WifiStatusMsg  pMsg = (AfApi.WifiStatusMsg) msg;
+                    onWifiStatusMsg(pMsg);
+                  }
+                  /* bye else if (msg instanceof AfApi.AudioFocusMsg) {
+                    AfApi.AudioFocusMsg  pMsg = (AfApi.AudioFocusMsg) msg;
+                    onAudioFocusEvent(pMsg);
+                  } 
+                  else if (msg instanceof AfApi.AudioReadyMsg) {
+                    AfApi.AudioReadyMsg  pMsg = (AfApi.AudioReadyMsg) msg;
+                    onAudioReadyMsg(pMsg);
+                  }
+                  else if (msg instanceof AfApi.AudioPreferenceChangeMsg) {
+                    AfApi.AudioPreferenceChangeMsg  pMsg = (AfApi.AudioPreferenceChangeMsg) msg;
+                    onAudioPreferenceChangeMsg(pMsg);
+                  }
+                  */
+                  else if (msg instanceof AfApi.AudioStateMsg) {
+                    AfApi.AudioStateMsg  pMsg = (AfApi.AudioStateMsg) msg;
+                    onAudioStateMsg(pMsg);
+                  }
+
+                });
+
         if (isFirstLoad) {
             mChannelsLoaded = false;
         } else {
@@ -170,11 +220,11 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
 
     @Override
     public void onStop() {
-        if (mIsBusRegistered) {
+        //mcj bye if (mIsBusRegistered) {
             // remove any possible pending callbacks
-            MainActivity.getBus().unregister(this);
-            mIsBusRegistered = false;
-        }
+            // mcj bye MainActivity.getBus().unregister(this);
+            //mcj bye mIsBusRegistered = false;
+        //mcj bye }
         super.onStop();
     }
 
@@ -193,29 +243,29 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
      *
      * @param event
      */
-    @SuppressWarnings("unused")
-    @Subscribe
-    public void onAudioStateEvent(final AudioStateEvent event) {
-        switch (event.state) {
-            case AudioStateEvent.STATE_DISCOVERING: {
+    public void onAudioStateMsg(final AfApi.AudioStateMsg msg) {
+        switch (msg.state) {
+            case AfApi.AudioStateMsg.STATE_DISCOVERING: {
                 // This is triggered repeatedly while the AudioFetch SDK is performing discovery
-                if (!mAudioController.isAudioSourceConnected() && !mConnectionMsgShown) {
+                //bye if (!mAudioController.isAudioSourceConnected() && !mConnectionMsgShown) {
+                if (!AFAudioService.api().isAudioSourceConnected() && !mConnectionMsgShown) {
                     getMainActivity().showProgress(getString(R.string.fetching_audio));
                     mConnectionMsgShown = true;
                 }
                 break;
             }
-            case AudioStateEvent.STATE_PLAYING: {
-                if (mAudioController.isAudioSourceConnected()) {
+            case AfApi.AudioStateMsg.STATE_PLAYING: {
+                //bye if (mAudioController.isAudioSourceConnected()) {
+                if (!AFAudioService.api().isAudioSourceConnected()) {
                     // This is triggered repeatedly while audio is playing with no dropouts
                 }
                 break;
             }
-            case AudioStateEvent.STATE_DROPOUT: {
+            case AfApi.AudioStateMsg.STATE_DROPOUT: {
                 // This is triggered repeatedly while audio is playing, but dropouts are occurring
                 break;
             }
-            case AudioStateEvent.STATE_TIMEOUT: {
+            case AfApi.AudioStateMsg.STATE_TIMEOUT: {
                 // This will be triggered if device discovery has failed
                 getMainActivity().dismissProgress();
                 mErrorLabel.setVisibility(View.VISIBLE);
@@ -223,10 +273,10 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                 checkForIgnoringBatteryOptimizations();
                 break;
             }
-            case AudioStateEvent.STATE_ERROR:
+            case AfApi.AudioStateMsg.STATE_ERROR:
             default: {
                 getMainActivity().dismissProgress();
-                getMainActivity().makeToast(event.error, Toast.LENGTH_LONG);
+                getMainActivity().makeToast(msg.error, Toast.LENGTH_LONG);
                 mChannelText.setText(getString(R.string.channels_not_loaded));
                 break;
             }
@@ -239,23 +289,21 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
      *
      * @param event
      */
-    @SuppressWarnings("unused")
-    @Subscribe
-    public void onChannelsReceivedEvent(final ChannelsReceivedEvent event) {
-        if (null != event) {
-            if (event.hostCount > 0) {
-                if (event.hasApbChannels()) {
+    public void onChannelsReceivedMsg(final AfApi.ChannelsReceivedMsg msg) {
+        if (null != msg) {
+            if (msg.hostCount > 0) {
+                if (msg.hasApbChannels()) {
                     mChannelsLoaded = false;
                     if (!mChannels.isEmpty()) {
                         mChannels.clear();
                     }
-                    mChannels.addAll(event.getApbChannels());
-                } else if (event.getChannels().size() > 0) {
+                    mChannels.addAll(msg.getApbChannels());
+                } else if (msg.getChannels().size() > 0) {
                     mChannelsLoaded = false;
                     if (!mChannelIntegerList.isEmpty()) {
                         mChannelIntegerList.clear();
                     }
-                    mChannelIntegerList.addAll(event.getChannels());
+                    mChannelIntegerList.addAll(msg.getChannels());
 
                     if (!mChannels.isEmpty()) {
                         mChannels.clear();
@@ -289,35 +337,33 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
      *
      * @param event
      */
-    @SuppressWarnings("unused")
-    @Subscribe
-    public void onChannelSelectedEvent(final ChannelSelectedEvent event) {
+/*mcj bye?    public void onChannelSelectedMsg(final AfApi.ChannelSelectedMsg msg) {
         try {
-            if (event.fromClick && !event.fromChannelControl) { // handles tapping on a side channel, or same channel in some cases
+            if (msg.fromClick && !msg.fromChannelControl) { // handles tapping on a side channel, or same channel in some cases
                 return;
             }
-            if (null != event && event.channel > -1) {
-                mCurrentChannel = event.channel;
-                mAudioController.setChannel(mCurrentChannel);
-                MainActivity.getBus().post(new ChannelChangedEvent(mCurrentChannel));
+            if (null != msg && msg.channel > -1) {
+                mCurrentChannel = msg.channel;
+                //mcj bye mAudioController.setChannel(mCurrentChannel);
+                //mcj bye MainActivity.getBus().post(new ChannelChangedEvent(mCurrentChannel));
+                AFAudioService.api().inMsgs().send(new AfApi.SetChannelMsg( mCurrentChannel ));
             }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
-
+*/
+    
     /**
      * Triggered by {@link com.audiofetch.afaudiolib.bll.colleagues.AudioController} for a Wifi event (e.g., user turns off wifi, no wifi present)
      *
      * @param event
      */
-    @SuppressWarnings("unused")
-    @Subscribe
-    public void onWifiStatusEvent(final WifiStatusEvent event) {
-        if (!event.enabled || !event.connected) {
+    public void onWifiStatusMsg(final AfApi.WifiStatusMsg msg) {
+        if (!msg.enabled || !msg.connected) {
             try {
                 // FAILED TO CONNECTED TO WIFI
-                final int msgResId = (event.enabled) ? R.string.status_nowifi : R.string.status_wifioff;
+                final int msgResId = (msg.enabled) ? R.string.status_nowifi : R.string.status_wifioff;
                 getMainActivity().makeToast(getString(msgResId), Toast.LENGTH_LONG);
 
                 mUiHandler.postDelayed(new Runnable() {
@@ -350,14 +396,15 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
      *
      * @param event
      */
+    // mcj possible bye
+    /*bye
     @SuppressWarnings("unused")
-    @Subscribe
     public void onVolumeChangeEvent(final VolumeChangeEvent event) {
         LG.Info(TAG, "Volume changed to: %d", event.volume);
         sharedPrefs.edit()
                 .putInt(PREF_LAST_VOLUME, event.volume)
                 .commit();
-    }
+    }*/
 
     /*==============================================================================================
     // INSTANCE METHODS
@@ -373,11 +420,13 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     public boolean onKeyDown(final int keyCode, final KeyEvent event) {
         boolean success = false;
         AtomicInteger currentVolume = new AtomicInteger(-1);
+        /*mcj hi
         if (null != getMainActivity() && null != mAudioController) {
             if (mAudioController.onKeyDown(keyCode, event, currentVolume) && currentVolume.intValue() >= 0) {
                 success = true;
             }
         }
+        */
         return success;
     }
 
@@ -386,7 +435,8 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
      */
     public synchronized void setupChannels() {
         if (!mChannelsLoaded) {
-            mCurrentChannel = getMainActivity().getAudioController().getCurrentChannel();
+            // mcj bye mCurrentChannel = getMainActivity().getAudioController().getCurrentChannel();
+            mCurrentChannel = AFAudioService.api().getCurrentChannel();
             mGridViewAdapter = new ChannelGridAdapter(mChannels, mCurrentChannel, getActivity());
             mGridView.setAdapter(mGridViewAdapter);
             if (mChannels.size() > mCurrentChannel) {
@@ -406,7 +456,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                 getMainActivity().alert(R.string.battery_optimization_title, R.string.battery_optimization_msg, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        getMainActivity().whitelistAppForBattery();
+                        //mcj hi? getMainActivity().whitelistAppForBattery();
                     }
                 });
             }
@@ -432,7 +482,12 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                     mGridViewAdapter.setSelectedPosition(position)
                             .notifyDataSetChanged();
 
-                    MainActivity.getBus().post(new ChannelSelectedEvent(mCurrentChannel, false, true));
+                    //bye MainActivity.getBus().post(new ChannelSelectedEvent(mCurrentChannel, false, true));
+                    
+                    // what is the point of channelsSelected? It's just our app, not the service
+                    //AFAudioService.api().outMsgs().send(new AfApi.ChannelSelectedMsg( mCurrentChannel, false, true ));
+
+                    AFAudioService.api().inMsgs().send(new AfApi.SetChannelMsg( mCurrentChannel ));
                 }
             }
         }
@@ -450,9 +505,11 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
             @Override
             public void run() {
                 if (isPaused) {
-                    mAudioController.pauseAudio();
+                    //bye mAudioController.pauseAudio();
+                    AFAudioService.api().pause();
                 } else {
-                    mAudioController.startAudio();
+                    //bye mAudioController.startAudio();
+                    AFAudioService.api().play();
                 }
             }
         }, 250);

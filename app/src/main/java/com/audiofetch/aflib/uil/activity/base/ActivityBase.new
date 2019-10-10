@@ -1,0 +1,1560 @@
+package com.audiofetch.aflib.uil.activity.base;
+
+import android.os.PowerManager;
+import android.provider.Settings;
+import android.support.annotation.ColorInt;
+import android.support.annotation.DrawableRes;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.annotation.TargetApi;
+
+import android.content.pm.PackageManager;
+import android.content.ComponentName;
+import android.content.ServiceConnection;
+import android.os.IBinder;
+
+import android.app.AlertDialog;
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
+
+import android.app.ActionBar;
+import android.app.ProgressDialog;
+import android.content.ActivityNotFoundException;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.graphics.ColorFilter;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.preference.PreferenceManager;
+
+import android.support.v4.content.ContextCompat;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.FrameLayout;
+
+//import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu;
+//import com.jeremyfeinstein.slidingmenu.lib.app.SlidingFragmentActivity;
+//bye import com.squareup.otto.Bus;
+//bye import com.squareup.picasso.Picasso;
+//bye import com.squareup.picasso.RequestCreator;
+import com.audiofetch.afaudiolib.R;
+import com.audiofetch.afaudiolib.bll.app.AFAudioService;
+import com.audiofetch.aflib.bll.app.ApplicationBase;
+import com.audiofetch.afaudiolib.bll.colleagues.AudioController;
+//bye import com.audiofetch.afaudiolib.bll.event.ChannelChangedEvent;
+//bye import com.audiofetch.afaudiolib.bll.event.ChannelSelectedEvent;
+//bye import com.audiofetch.afaudiolib.bll.event.EventBus;
+//bye import com.audiofetch.afaudiolib.bll.event.LogoTappedEvent;
+import com.audiofetch.afaudiolib.bll.helpers.ColorFilterGenerator;
+import com.audiofetch.afaudiolib.bll.helpers.LG;
+
+import com.audiofetch.aflib.uil.activity.ExitActivity;
+import com.audiofetch.aflib.uil.fragment.base.FragmentBase;
+//import com.waio.mobile.android.uil.fragment.menu.SlidingMenuFragment;
+
+import android.widget.ImageView;
+import android.widget.Toast;
+
+import java.lang.ref.WeakReference;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+// AudioFetch API
+import com.audiofetch.afaudiolib.api.AfApi;
+import com.audiofetch.afaudiolib.api.ApiMessenger;
+import io.reactivex.Flowable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+
+
+/**
+ * Base activity for AF app, contains all the boilerplate code
+ */
+public class ActivityBase extends SlidingFragmentActivity {
+
+    /*==============================================================================================
+    // DATA MEMBERS
+    //============================================================================================*/
+
+    public static final String TAG = ActivityBase.class.getSimpleName();
+    public static final String SERVICE_STATE = "ServiceState";
+
+    public static final String PDF_READER_PACKAGE = "com.adobe.reader";
+    public static final String DOCS_VIEWER_FMT = "https://docs.google.com/viewerng/viewer?url=%s";
+
+    public static final int MAIN_CONTAINER_RESID = R.id.main_container;
+    public static final int LOGO_WIDTH = 304;
+    public static final int LOGO_HEIGHT = 77;
+
+    protected FragmentManager mFragManager;
+    protected ProgressDialog mProgressDialog;
+    protected Handler mUiHandler, mBgHandler;
+    protected static HandlerThread mHandlerThread;
+    protected SlidingMenu mSlidingMenu;
+    protected SlidingMenuFragment mSlidingMenuFragment;
+
+    protected boolean mIsRunning;
+    protected FrameLayout mMainContainer;
+    protected String appTitle;
+    protected View mCustomActionBarView;
+    protected ImageView mLogoImageView;
+
+
+    protected AudioController mAudioController;
+    protected AFAudioService mAFAudioSvc;
+    protected boolean mIsAFAudioSvcBound = false;
+    protected ServiceConnection mAFAudioSvcConn;
+
+    // RxJava communication with the service.
+    protected AfApi mAfApi = null;
+
+    //bye protected static Bus mEventBus;
+
+    /**
+     * This event tracks the last "background" prev/next event, from the service notification UI.
+     * It will be null if no event has registered, or the app has come to foreground and processed
+     * the event already.
+     */
+    @Nullable
+    protected static AfApi.ChannelSelectedMsg mBackgroundChannelEvent;
+
+    protected static WeakReference<ActivityBase> mInstance; // static works since we have 1 activity
+
+    protected static AtomicInteger mLoadCount = new AtomicInteger(0);
+
+    /*==============================================================================================
+    // OVERRIDES
+    //============================================================================================*/
+
+    public ActivityBase() {
+        super();
+        mInstance = new WeakReference<>(this);
+    }
+
+
+    public AfApi afApi() {
+        return mAfApi;
+    }
+
+
+
+    @Override
+    @SuppressWarnings("deprecation") // FEATURE_INDETERMINATE_PROGRESS
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // init preferences
+        PreferenceManager.setDefaultValues(this, R.xml.fragment_settings, false);
+
+        // handler, bus and frag manager
+        mUiHandler = new Handler();
+        //bye mEventBus = getBus();
+        mFragManager = getFragmentManager();
+
+        // config window with an action bar and a progress spinner in top left corner (hidden)
+        final Window win = getWindow();
+        win.requestFeature(Window.FEATURE_ACTION_BAR);
+        win.requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+        win.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        // configure action bar
+        ActionBar ab = getActionBar();
+        ab.hide();
+        ab.setDisplayShowTitleEnabled(false);
+        ab.setDisplayHomeAsUpEnabled(false); // show back arrow
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+            enableHomeButton();
+        }
+
+        // show logo as clickable button in action bar in center
+        @SuppressWarnings("deprecation")
+        ActionBar.LayoutParams layout = new ActionBar.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT);
+        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mCustomActionBarView = inflater.inflate(R.layout.actionbar_custom, null);
+        mLogoImageView = (ImageView) mCustomActionBarView.findViewById(R.id.custom_actionbar_logo_button);
+        mLogoImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //bye getBus().post(new LogoTappedEvent());
+                        afApi().outMsgs().send( new AfAppMsgs.LogoTappedEvent());
+                    }
+                });
+            }
+        });
+        ab.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
+        ab.setCustomView(mCustomActionBarView, layout);
+
+        appTitle = getString(R.string.actionbar_title);
+//        ab.setTitle(appTitle);
+        showActionProgress(true);
+        mUiHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                showActionProgress(false);
+            }
+        }, 1500);
+
+        try {
+            // assign content view and sliding menu view
+            setContentView(R.layout.main_fragment_container);
+            setBehindContentView(R.layout.fragment_menu);
+
+            mMainContainer = (FrameLayout) findViewById(R.id.main_container);
+
+            // potential fix for startup crash on 6.x
+            mMainContainer.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+
+            // setup side menu
+            setupSlidingMenu();
+        } catch(Exception ex) {
+            LG.Error(TAG, "UNKNOWN ERRROR: ", ex);
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            requestIgnoreBatteryOptimizations();
+        }
+        startAFAudioService();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        //bye mEventBus.unregister(this);
+        dismissProgress();
+
+        if (null != mAFAudioSvc) {
+            // showing notifications while UI is in background
+            mAFAudioSvc.showNotifications();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //bye mEventBus.register(this);
+
+        if (1 == mLoadCount.get()) { // no events would happen here
+            mUiHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    //mEventBus.post(new ChannelChangedEvent(0));
+                    afApi().outMsgs().send( new AfApi.ChannelChangedMsg(0));
+                }
+            }, 1000);
+        } else if (null != mBackgroundChannelEvent) {
+            // post any lock-screen channel events to sync viewpager ui
+            //getBus().post(mBackgroundChannelEvent);
+            afApi().outMsgs().send( mBackgroundChannelEvent );
+            mBackgroundChannelEvent = null;
+        }
+
+        if (null != mAFAudioSvc) {
+            mAFAudioSvc.hideNotifcations();
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putBoolean(SERVICE_STATE, mIsAFAudioSvcBound);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        mIsAFAudioSvcBound = savedInstanceState.getBoolean(SERVICE_STATE);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mLoadCount.incrementAndGet();
+        mIsRunning = true;
+    }
+
+    @Override
+    protected void onStop() {
+        stopBgHandler();
+        mIsRunning = false;
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        stopAFAudioService();
+        super.onDestroy();
+    }
+
+    /**
+     * User pressed back on device
+     */
+    @Override
+    public void onBackPressed() {
+        if (!mSlidingMenuFragment.isShowingPlayer()) {
+            mSlidingMenuFragment.selectMenuItem(SlidingMenuFragment.PLAYER, false);
+            return;
+        }
+//        super.onBackPressed();
+//        this.exitApplicationClearHistory();
+        ApplicationBase.showDeviceHomeScreen();
+    }
+
+    @Override
+    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        final int itemId = item.getItemId();
+        switch (itemId) {
+            case android.R.id.home: {
+                if (mSlidingMenuFragment.isShowingPlayer()) {
+                    toggle();
+                    return true;
+                } else {
+                    onBackPressed();
+                    return true;
+                }
+            }
+        }
+        return super.onMenuItemSelected(featureId, item);
+    }
+
+    /*==============================================================================================
+    // INSTANCE METHODS
+    //============================================================================================*/
+
+    /**
+     * Returns the logo image view
+     * @return ImageView
+     */
+    public ImageView getLogoImageView() {
+        return mLogoImageView;
+    }
+
+    /**
+     * Sets the logo image to a Drawable
+     * @param logoImage
+     */
+    public void setLogoImage(@Nullable final Drawable logoImage) {
+        if (null != mLogoImageView) {
+            mLogoImageView.setAdjustViewBounds(true);
+            mLogoImageView.setImageDrawable(logoImage);
+        }
+    }
+
+    /**
+     * Sets the logo image to the specified resource
+     * @param drawableResId
+     */
+    public void setLogoImage(@DrawableRes final int drawableResId) {
+        if (null != mLogoImageView) {
+            mLogoImageView.setAdjustViewBounds(true);
+            mLogoImageView.setImageResource(drawableResId);
+        }
+    }
+
+    /**
+     * Sets the logo image to a Uri
+     * @param logoImageUri
+     */
+    public void setLogoImage(@NonNull final String logoImageUri) {
+        if (null != mLogoImageView && null != logoImageUri && !logoImageUri.isEmpty()) {
+            mLogoImageView.setAdjustViewBounds(true);
+            loadRemoteImage(mLogoImageView, logoImageUri);
+        }
+    }
+
+    /**
+     * Toggles the logo image visibility
+     * @param show
+     */
+    public void showLogoImage(final boolean show) {
+        if (null != mLogoImageView) {
+            mLogoImageView.setVisibility((show) ? View.VISIBLE : View.INVISIBLE);
+        }
+    }
+
+    /**
+     * Sets the actionbar background color
+     *
+     * @param actionBarColor
+     */
+    public void setActionBarBackgroundColor(@ColorInt final int actionBarColor) {
+        if (null != mCustomActionBarView) {
+            getActionBar().setBackgroundDrawable(new ColorDrawable(actionBarColor));
+            mCustomActionBarView.setBackgroundColor(actionBarColor);
+        }
+    }
+
+    /**
+     * Sets the hamburger menu tint color
+     *
+     * @param menuTintColor
+     */
+    public void setMenuTintColor(@ColorInt final int menuTintColor) {
+        Drawable menuImage = getColorizedDrawableWithTransparency(R.drawable.ic_navigation_drawer, menuTintColor);
+        if (null != menuImage) {
+            getActionBar().setIcon(menuImage);
+        }
+    }
+
+    /**
+     * Turns on/off the back arrow in the actionbar
+     *
+     * @param visible
+     * @return
+     */
+    public ActivityBase toggleBackArrow(final boolean visible) {
+        getActionBar().setDisplayHomeAsUpEnabled(visible);
+        return this;
+    }
+
+    /**
+     * Set the action bar title
+     *
+     * @param title
+     */
+    public void setTitle(final String title) {
+        getActionBar().setTitle(title);
+    }
+
+    /**
+     * Toggles the spinner in the action bar
+     *
+     * @param showing
+     */
+    @SuppressWarnings("deprecation")
+    public void showActionProgress(final boolean showing) {
+        setProgressBarIndeterminate(showing);
+        setProgressBarIndeterminateVisibility(showing);
+    }
+
+    /**
+     * Returns the handler
+     *
+     * @return
+     */
+    public Handler getHandler() {
+        if (null == mUiHandler) mUiHandler = new Handler();
+        return mUiHandler;
+    }
+
+    /**
+     * Returns a handler running on a lazy-loading HandlerThread (background thread, no UI tasks)
+     * @return
+     */
+    public synchronized Handler getBgHandler() {
+//        return getHandler();
+        if (null == mHandlerThread) {
+            // lazy-loading bg thread
+            // create thread if not already created
+            mHandlerThread = new HandlerThread("BG_THREAD", Thread.MAX_PRIORITY);
+        }
+        if (null != mHandlerThread) {
+            // start thread if not already started
+            if (!mHandlerThread.isAlive()) {
+                mHandlerThread = null;
+                mHandlerThread = new HandlerThread("BG_THREAD", Thread.MAX_PRIORITY);
+                mHandlerThread.start();
+            }
+            // attach handler to started thread
+            if (mHandlerThread.isAlive()) {
+                mBgHandler = new Handler(mHandlerThread.getLooper());
+            }
+        }
+        return mBgHandler;
+    }
+
+    /**
+     * Returns true if handler and handler thread are alive and well
+     *
+     * @return
+     */
+    public boolean isBgHandlerAlive() {
+        return (null != mBgHandler && null != mHandlerThread && mHandlerThread.isAlive());
+    }
+
+    /**
+     * Stops the bg thread
+     *
+     * @return
+     */
+    public synchronized void stopBgHandler() {
+        if (null != mHandlerThread) {
+            mHandlerThread.quit();
+        }
+        mBgHandler = null;
+        mHandlerThread = null;
+    }
+
+    /**
+     * Stops the background thread if needed
+     *
+     * @return
+     */
+    public synchronized void suspendBgHandler() {
+        if (isBgHandlerAlive()) {
+            stopBgHandler(); // stop ad fetch thread for now
+        }
+    }
+
+    /**
+     * Post delayed to handler
+     *
+     * @param runnable
+     * @param delayMs
+     */
+    public void afterDelay(final Runnable runnable, final int delayMs) {
+        getHandler().postDelayed(runnable, delayMs);
+    }
+
+    /**
+     * Post delayed to handler
+     *
+     * @param runnable
+     * @param delayMs
+     */
+    public boolean afterDelayBg(final Runnable runnable, final int delayMs) {
+        boolean queued = false;
+        if (null != getBgHandler() && null != mHandlerThread && mHandlerThread.isAlive()) {
+            mBgHandler.postDelayed(runnable, delayMs);
+            queued = true;
+        }
+        return queued;
+    }
+
+    /**
+     * Stops the app cleanly
+     */
+    public void exitApplicationClearHistory() {
+        showDeviceHomeScreen();
+        stopAFAudioService();
+        ExitActivity.exitAppWithRemoveFromRecent(this); // start exit activity
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                finishAndRemoveTask();
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                finishAffinity();
+            } else {
+                finish();
+            }
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            System.exit(0);
+        }
+        //ApplicationBase.killApp();
+    }
+
+    /**
+     * Shows an confirm dialog, think javascript:window.confirm
+     *
+     * @param titleResId
+     * @param msgResId
+     * @param positiveCallback
+     */
+    public void confirmDialog(final int titleResId, final int msgResId, final DialogInterface.OnClickListener positiveCallback) {
+        confirmDialog(titleResId, msgResId, positiveCallback, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+    }
+
+    /**
+     * Shows an confirm dialog, think javascript:window.confirm
+     *
+     * @param titleResId
+     * @param msgResId
+     * @param positiveCallback
+     * @param negativeListener
+     */
+    public void confirmDialog(final int titleResId, final int msgResId, final DialogInterface.OnClickListener positiveCallback, final DialogInterface.OnClickListener negativeListener) {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle(titleResId)
+                .setMessage(msgResId)
+                .setCancelable(false)
+                .setPositiveButton(R.string.yes, positiveCallback)
+                .setNegativeButton(R.string.no, negativeListener);
+        builder.create().show();
+    }
+
+    /**
+     *
+     * @param titleResId
+     */
+    public void alert(int titleResId) {
+        alert(getString(titleResId));
+    }
+
+    /**
+     *
+     * @param titleResId
+     * @param msgResId
+     */
+    public void alert(int titleResId, int msgResId) {
+        alert(getString(titleResId), getString(msgResId));
+    }
+
+    /**
+     * Think js w an extra param, and callback
+     *
+     * @param title
+     * @param msg
+     */
+    public void alert(String title, String msg, final DialogInterface.OnClickListener listener) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(msg)
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        if (null != listener) {
+                            listener.onClick(dialog, which);
+                        }
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
+    }
+
+    /**
+     * Think js w an extra param
+     *
+     * @param title
+     * @param msg
+     */
+    public void alert(String title, String msg) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(msg)
+                .setCancelable(false)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
+    }
+
+    /**
+     * Alert dialog convenience
+     *
+     * @param title
+     */
+    public void alert(String title) {
+        alert(title, null);
+    }
+
+    /**
+     * Shows a toast window for duration
+     *
+     * @param msg
+     * @param duration
+     */
+    public void makeToast(final String msg, final int duration) {
+        final int dur = (Toast.LENGTH_SHORT == duration) ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
+        Toast.makeText(this, msg, dur).show();
+    }
+
+    /**
+     * Shows a toast window for duration
+     *
+     * @param msgResId
+     * @param duration
+     */
+    public void makeToast(final int msgResId, final int duration) {
+        final int dur = (Toast.LENGTH_SHORT == duration) ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG;
+        Toast.makeText(this, msgResId, dur).show();
+    }
+
+    /**
+     * Shows a toast window
+     *
+     * @param msg
+     */
+    public void makeToast(final String msg) {
+        makeToast(msg, Toast.LENGTH_LONG);
+    }
+
+    /**
+     * Shows a toast window
+     *
+     * @param msgResId
+     */
+    public void makeToast(final int msgResId) {
+        makeToast(msgResId, Toast.LENGTH_LONG);
+    }
+
+    /**
+     * Shows toast for duration of seconds
+     *
+     * @param msg      The message to show in the toast
+     * @param duration The duration in seconds
+     */
+    public void toastFor(final String msg, final int duration) {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (duration > 2) {
+                    final Toast toasty = Toast.makeText(ActivityBase.this, msg, Toast.LENGTH_SHORT);
+                    toasty.show();
+                    int durationSeconds = (duration * 1000);
+                    new CountDownTimer(durationSeconds, 1000) {
+                        @Override
+                        public void onTick(long l) {
+                            toasty.show();
+                        }
+
+                        @Override
+                        public void onFinish() {
+                            toasty.show();
+                        }
+                    }.start();
+                } else {
+                    Toast.makeText(ActivityBase.this, msg, Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    /**
+     * Shows progress and hides it after given timeout
+     *
+     * @param msg
+     * @param timeoutMs
+     */
+    public void showProgress(final String msg, final Integer timeoutMs) {
+        showProgress(msg);
+        if (null != timeoutMs) {
+            mUiHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    dismissProgress();
+                }
+            }, timeoutMs);
+        }
+    }
+
+    /**
+     * Shows the progress dialog with the given message
+     *
+     * @param msg
+     */
+    @SuppressWarnings("deprecation")
+    public void showProgress(final String msg) {
+        if (null != msg) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (null == mProgressDialog) {
+                        mProgressDialog = new ProgressDialog(ActivityBase.this, R.style.AppCompatAlertDialogStyle);
+                        mProgressDialog.setCancelable(false);
+                        mProgressDialog.setIndeterminate(true);
+                        mProgressDialog.setTitle(null);
+                        mProgressDialog.setMessage(msg);
+                        mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+                        mProgressDialog.show();
+                    } else {
+                        mProgressDialog.setMessage(msg);
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Hides the progress dialog
+     */
+    public void dismissProgress() {
+        if (mProgressDialog != null) {
+            mProgressDialog.dismiss();
+        }
+        mProgressDialog = null;
+    }
+
+    /*=======================================================
+    // FRAGMENT SUPPORT
+    //=====================================================*/
+
+    /**
+     * Clears the backstack
+     */
+    public void clearBackstack() {
+        if (null != mFragManager) {
+            try {
+                mFragManager.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Swaps in a fragment
+     *
+     * @param fragment
+     * @param tag
+     * @param clearBackStack
+     */
+    public void swapFragment(final Fragment fragment, final String tag, final boolean clearBackStack) {
+        if (clearBackStack) {
+            clearBackstack();
+        }
+
+        mFragManager.beginTransaction()
+                .replace(MAIN_CONTAINER_RESID, fragment, tag)
+                .commit();
+        updateActionBar();
+    }
+
+    public void switchContent(final Fragment newContent, final String title, final String tag, boolean toggle) {
+        if (toggle) {
+            toggle(); // hide menu first
+        }
+        showActionProgress(true);
+
+        if (null != title && !title.isEmpty()) {
+            setTitle(title);
+        } else {
+            setTitle(null);
+        }
+
+        // then show fragment after menu animation
+        final CountDownTimer tmr = new CountDownTimer(550, 1) {
+            @Override
+            public void onTick(long l) {
+            }
+
+            @Override
+            public void onFinish() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        // give the fragment a few to display before hiding window progress
+                        final CountDownTimer t = new CountDownTimer(150, 1) {
+                            @Override
+                            public void onTick(long l) {
+
+                            }
+
+                            @Override
+                            public void onFinish() {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        showActionProgress(false);
+                                    }
+                                });
+                            }
+                        };
+
+//                        if (!removeFragment(newContent)) {
+//                            pushFragment(newContent, tag, true);
+//                            t.start();
+//                            return;
+//                        }
+
+                        if (mIsRunning) {
+                            final int backstackCount = mFragManager.getBackStackEntryCount();
+                            final boolean isShowingPlayer = (1 == backstackCount);
+                            if (backstackCount > 0 && !isShowingPlayer) {
+                                popFragmentBackStack();
+                            } else {
+                                pushFragment(newContent, tag, true);
+                            }
+                            t.start();
+                        }
+                    }
+                });
+            }
+        };
+        tmr.start();
+    }
+
+    /**
+     * Switches the content
+     *
+     * @param newContent
+     * @param tag
+     * @param toggle
+     */
+    public void switchContent(final Fragment newContent, final String tag, boolean toggle) {
+        switchContent(newContent, "", tag, toggle);
+    }
+
+    /**
+     * Removes a fragment
+     *
+     * @param newContent
+     */
+    public boolean removeFragment(Fragment newContent) {
+        boolean result = false;
+        final Fragment f = mFragManager.findFragmentById((MAIN_CONTAINER_RESID));
+        if (null != f) {
+            try {
+                final FragmentBase remove = (FragmentBase) f;
+                if (null != remove && !remove.equalsFragment((FragmentBase) newContent)) {
+                    mFragManager.beginTransaction()
+                            .remove(f)
+                            .commit();
+                    result = true;
+                }
+            } catch (ClassCastException ex) {
+                ex.printStackTrace();
+                mFragManager.beginTransaction()
+                        .remove(f)
+                        .commit();
+                result = true;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Adds in a fragment
+     *
+     * @param fragment
+     * @param tag
+     */
+    public void addFragment(final Fragment fragment, final String tag) {
+        mFragManager.beginTransaction()
+                .add(MAIN_CONTAINER_RESID, fragment, tag)
+                .commit();
+    }
+
+    /**
+     * Sets slide in/out animations
+     *
+     * @param ft
+     */
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
+    public void setCustomAnimations(final FragmentTransaction ft) {
+        if (null != ft) {
+            try {
+                ft.setCustomAnimations(R.animator.slide_in_left, R.animator.slide_out_right, android.R.animator.fade_in, android.R.animator.fade_out);
+            } catch(Exception ex) {
+                LG.Error(TAG, "FAILED TO SET CUSTOM ANIMATIONS: ", ex);
+            }
+        }
+    }
+
+    /**
+     * Pushes a fragment onto the stack
+     *
+     * @param fragment
+     * @param tag
+     * @param addToBackstack
+     */
+    public void pushFragment(final Fragment fragment, final String tag, final boolean addToBackstack) {
+        FragmentTransaction ft = mFragManager.beginTransaction();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
+            setCustomAnimations(ft);
+        }
+//        ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_CLOSE);
+        ft.replace(MAIN_CONTAINER_RESID, fragment);
+        if (addToBackstack) {
+            ft.addToBackStack(tag);
+        }
+        ft.commit();
+        updateActionBar();
+    }
+
+    /**
+     * Updates the actionbar
+     */
+    public void updateActionBar() {
+        final ActionBar ab = getActionBar();
+        if (mSlidingMenuFragment.isShowingPlayer()) {
+//            ab.setIcon(getResources().getDrawable(R.drawable.ic_navigation_drawer));
+            ab.setDisplayHomeAsUpEnabled(false);
+            ab.setDisplayShowHomeEnabled(true);
+        } else {
+//            ab.setIcon(getResources().getDrawable(R.drawable.ic_navigation_drawer_transparent));
+            ab.setDisplayHomeAsUpEnabled(true);
+            ab.setDisplayShowHomeEnabled(true);
+        }
+    }
+
+    /**
+     * Pops the fragment from the backstack
+     *
+     * @return
+     */
+    public boolean popFragmentBackStack() {
+        boolean result = false;
+        if (mFragManager.getBackStackEntryCount() > 0) {
+            mFragManager.popBackStack();
+            result = true;
+        }
+        return result;
+    }
+
+    /**
+     * Indicates whether the side, slide-out menu is showing
+     *
+     * @return
+     */
+    public boolean isSlidingMenuVisible() {
+        final boolean isShowing = (null != mSlidingMenu && mSlidingMenu.isMenuShowing()) ? true : false;
+        return isShowing;
+    }
+
+    /**
+     * initialize the sliding menu
+     */
+    protected void setupSlidingMenu() {
+        if (null != findViewById(R.id.menu_frame)) {
+            //getActionBar().setDisplayHomeAsUpEnabled(true);
+            try {
+                mSlidingMenuFragment = new SlidingMenuFragment();
+                FragmentTransaction t = mFragManager.beginTransaction();
+                t.replace(R.id.menu_frame, mSlidingMenuFragment, SlidingMenuFragment.TAG);
+                t.commit();
+
+                // calculate the behind offset so the menu width is always 300 dp
+                final DisplayMetrics metrics = new DisplayMetrics();
+                getWindowManager().getDefaultDisplay().getMetrics(metrics);
+                int px = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 300, metrics);
+                px = metrics.widthPixels - px;
+
+                mSlidingMenu = getSlidingMenu();
+                if (null != mSlidingMenu) {
+                    mSlidingMenu.setEnabled(false);
+                    mSlidingMenu.setVisibility(View.VISIBLE);
+                    mSlidingMenu.setMode(SlidingMenu.LEFT);
+                    mSlidingMenu.setBehindOffsetRes(R.dimen.slidingmenu_offset);
+                    mSlidingMenu.setFadeDegree(0.35f);
+                    mSlidingMenu.setSelectorEnabled(true);
+                    mSlidingMenu.setBehindOffset(px);
+                    mSlidingMenu.setSlidingEnabled(true);
+
+                    mSlidingMenu.setTouchModeAbove(SlidingMenu.TOUCHMODE_NONE);
+//                mSlidingMenu.setTouchModeBehind(SlidingMenu.TOUCHMODE_NONE);
+
+                    mSlidingMenu.toggle();
+                }
+                setSlidingActionBarEnabled(true);
+            } catch(Exception ex) {
+                LG.Error(TAG, "FAILED TO SETUP SLIDING MENU:", ex);
+            }
+        }
+    }
+
+    /**
+     * Hides the app, and takes the user to the device's home screen
+     */
+    protected void showDeviceHomeScreen() {
+        ApplicationBase.showDeviceHomeScreen();
+    }
+
+    /**
+     * Enables the home button
+     */
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+    protected void enableHomeButton() {
+        getActionBar().setHomeButtonEnabled(true);
+    }
+
+
+    /*=======================================================
+    // AUDIO SERVICE
+    //=====================================================*/
+
+    /**
+     * Opens web site
+     */
+    public void openAudioFetch() {
+        openAudioFetchWebSite(this);
+    }
+
+    /**
+     * Returns the audio service, or null if not started.
+     *
+     * @return - Returns an instance of the {@link AFAudioService},
+     * or null if the service is not started
+     */
+    @Nullable
+    public AFAudioService getAudioService() {
+        return mAFAudioSvc;
+    }
+
+    /**
+     * Starts the Audio by starting the AF AudioService
+     *
+     * @return
+     */
+    protected boolean startAFAudioServiceAudio() {
+        boolean started = false;
+        if (null != mAFAudioSvc) {
+            started = true;
+            mUiHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    //mAFAudioSvc.play(); qqq
+                    AfApi afApi = afApi();
+                    if ( afApi != null) {
+                        afApi.inMsgs().send(new AfApi.PlayAudioMsg());
+                    }
+
+                }
+            }, 500);
+        }
+        return started;
+    }
+
+    /**
+     * Start the {@see AFAudioService}
+     * @return
+     */
+    protected ActivityBase startAFAudioService() {
+        if (null == mAFAudioSvc) {
+            final Intent serviceIntent = new Intent(this, AFAudioService.class);
+            startService(serviceIntent);
+            bindService(new Intent(this, AFAudioService.class), getAFAudioServiceConnection(), 0);
+        }
+        return this;
+    }
+
+    /**
+     * Stops the {@see AFAudioService}
+     */
+    protected void stopAFAudioService() {
+        if (null != mAFAudioSvc) {
+            mAFAudioSvc.hideNotifcations();
+            if (mIsAFAudioSvcBound && null != mAFAudioSvcConn) {
+                unbindService(mAFAudioSvcConn);
+            }
+            mAFAudioSvc.quit();
+        }
+    }
+
+    /**
+     * Returns a service connection to the AFAudioService, and "wires-up" mAFAudioSvc to point
+     * to the AFAudioService class instance.
+     *
+     * @see AFAudioService
+     * @return
+     */
+    protected ServiceConnection getAFAudioServiceConnection() {
+        if (null == mAFAudioSvcConn) {
+            mAFAudioSvcConn = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName className, IBinder service) {
+                    if (service instanceof AFAudioService.AFAudioBinder) {
+                        LG.Debug(TAG, "AFAudioService connected");
+                        AFAudioService.AFAudioBinder binder = (AFAudioService.AFAudioBinder) service;
+                        mAFAudioSvc = binder.getService();
+
+                        if (null != mAFAudioSvc) {
+                            Context ctx = getApplicationContext();
+                            mAfApi = mAFAudioSvc.api();
+                            // app context must be set before initing audio subsystem
+                            mAfApi.setAppContext( getApplicationContext() );
+                            mAfApi.inMsgs().send( new AfApi.InitAudioSubsystemMsg() );
+
+                            mIsAFAudioSvcBound = true;
+                            mAFAudioSvc.hideNotifcations();
+
+                            mAudioController = mAFAudioSvc.getAudioController();
+                            mAudioController.setVolumeControlStream(ActivityBase.this);
+                            mUiHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    startAFAudioServiceAudio();
+                                }
+                            });
+
+                            LG.Debug(TAG, "In and out API connected.");
+                        
+                            doSubscriptions();
+                            /*
+                            LG.Debug(TAG, "Listening for messages.");
+                            mAfApi.outMsgs()
+                                .asFlowable()
+                                .observeOn(AndroidSchedulers.mainThread())
+                                .subscribe(
+                                    msg -> {
+                                      if (msg instanceof ApiMessenger.ChannelsReceivedMsg) {
+                                        ApiMessenger.ChannelsReceivedMsg  crMsg = (ApiMessenger.ChannelsReceivedMsg) msg;
+                                        channelsReceived(crMsg);
+                                      }
+                                      qqq
+                                    });
+                            */
+                        }
+                    }
+                }
+
+                @Override
+                public void onServiceDisconnected(ComponentName componentName) {
+                    LG.Debug(TAG, "AFAudioService disconnected");
+                    mIsAFAudioSvcBound = false;
+                    mAFAudioSvcConn = null;
+                    mAFAudioSvc = null;
+                }
+            };
+        }
+        return mAFAudioSvcConn;
+    }
+
+    // Subclasses override this to subscribe to api messages
+    public void doSubscriptions() {
+        // subsclasses override
+    }
+
+    /*bye
+    private void channelsReceived(ApiMessenger.ChannelsReceivedMsg msg) {
+        LG.Debug(TAG, "AFAudioService mcj channels received! ...on thread: " + Thread.currentThread().getName());
+    }
+    */
+    
+
+    /*==============================================================================================
+    // STATIC METHODS
+    //============================================================================================*/
+
+    /**
+     * Displays the audiofetch web site
+     * @param ctx
+     */
+    public static void openAudioFetchWebSite(@NonNull Context ctx) {
+        if (null == ctx || null == ctx.getString(R.string.web_site)) return;
+
+        openWebSite(ctx, ctx.getString(R.string.web_site));
+    }
+
+    /**
+     * Displays the web site
+     * @param ctx
+     * @param  webSite
+     */
+    public static void openWebSite(@NonNull Context ctx, @NonNull final String webSite) {
+        if (null == ctx || null == webSite || webSite.isEmpty()) return;
+
+        try {
+            final Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(webSite));
+            ctx.startActivity(i);
+        } catch(ActivityNotFoundException ex) {
+            LG.Error(TAG, "Activity not found", ex);
+        } catch(Exception ex) {
+            LG.Error(TAG, "Activity not found", ex);
+        }
+    }
+
+    /**
+     * Returns the instance or null, since it's a weak reference to this
+     * @return
+     */
+    @Nullable
+    public static ActivityBase getInstance() {
+        return (null != mInstance) ? mInstance.get() : null;
+    }
+
+    /**
+     * Returns the load count for the UI, how many times screen locked and shown, etc.
+     * @return
+     */
+    public static int getLoadCount() {
+        return mLoadCount.get();
+    }
+
+    /**
+     * Increments and gets load count
+     * @return
+     */
+    public static int incrementAndGetLoadCount() {
+        return mLoadCount.incrementAndGet();
+    }
+
+    /**
+     * Queues an event to be processed in the UI, when the app comes back to foreground.
+     * This synchronizes the UI with any background channel events.
+     *
+     * @param event
+     * @return
+     */
+    public static void addBackgroundChannelEvent(final AfApi.ChannelSelectedMsg event) {
+        mBackgroundChannelEvent = event;
+    }
+
+
+    /**
+     * Returns the EventBus
+     *
+     * @return
+     */
+    /*bye
+    public static Bus getBus() {
+        if (null == mEventBus) {
+            mEventBus = EventBus.get();
+        }
+        return mEventBus;
+    }*/
+
+    /**
+     * Returns a colorized version of the drawable
+     *
+     * @param drawableResId
+     * @param desiredColor
+     * @return
+     */
+    @Nullable
+    public static Drawable getColorizedDrawableWithTransparency(@DrawableRes final int drawableResId, @ColorInt final int desiredColor) {
+        return getColorizedDrawable(drawableResId, desiredColor, PorterDuff.Mode.SRC_IN);
+    }
+
+    /**
+     * Returns a colorized version of the drawable
+     *
+     * @param image
+     * @param desiredColor
+     * @return
+     */
+    @Nullable
+    public static Drawable getColorizedDrawableWithTransparency(@NonNull Drawable image, @ColorInt final int desiredColor) {
+        return getColorizedDrawable(image, desiredColor, PorterDuff.Mode.SRC_IN);
+    }
+
+    /**
+     * Returns a colorized version of the drawable
+     *
+     * @param drawableResId
+     * @param desiredColor
+     * @return
+     */
+    @Nullable
+    public static Drawable getColorizedDrawable(@DrawableRes final int drawableResId, @ColorInt final int desiredColor, final PorterDuff.Mode mode) {
+        final Context ctx = ApplicationBase.getAppContext();
+        Drawable image = null;
+        if (null != ctx) {
+            image = ContextCompat.getDrawable(ctx, drawableResId);
+            if (null != image) {
+                image = getColorizedDrawable(image, desiredColor, mode);
+            }
+        }
+        return image;
+    }
+
+    /**
+     * Returns a colorized version of the drawable
+     *
+     * @param image
+     * @param desiredColor
+     * @return
+     */
+    @Nullable
+    public static Drawable getColorizedDrawable(@NonNull final Drawable image, @ColorInt final int desiredColor, final PorterDuff.Mode mode) {
+        if (null != image) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                image.setColorFilter(new PorterDuffColorFilter(desiredColor, mode));
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                image.setTint(desiredColor);
+                image.setTintMode(mode);
+            }
+        }
+        return image;
+    }
+
+    /**
+     * Colorizes an image that doesn't have transparency
+     *
+     * @param image
+     * @param destinationColor
+     * @return
+     */
+    @Nullable
+    public static Drawable getColorizedDrawableNoTransparency(@NonNull final Drawable image, @ColorInt final int sourceColor, @ColorInt final int destinationColor) {
+        if (null != image) {
+            final ColorFilter cf = ColorFilterGenerator.from(sourceColor)
+                    .to(destinationColor);
+            image.setColorFilter(cf);
+//            image.setColorFilter(new PorterDuffColorFilter(desiredColor, PorterDuff.Mode.OVERLAY));
+        }
+        return image;
+    }
+
+    /**
+     * Colorizes an image that doesn't have transparency
+     *
+     * @param drawableResId
+     * @param destinationColor
+     * @return
+     */
+    @Nullable
+    public static Drawable getColorizedDrawableNoTransparency(@DrawableRes final int drawableResId, @ColorInt final int sourceColor, @ColorInt final int destinationColor) {
+        final Context ctx = ApplicationBase.getAppContext();
+        Drawable image = null;
+        if (null != ctx) {
+            image = ContextCompat.getDrawable(ctx, drawableResId);
+            if (null != image) {
+                image = getColorizedDrawableNoTransparency(image, sourceColor, destinationColor);
+            }
+        }
+        return image;
+    }
+
+    /**
+     * Loads an image using Picasso
+     *
+     * @param imageView
+     * @param remoteUrl
+     */
+    public static void loadRemoteImage(@NonNull final ImageView imageView, @NonNull final String remoteUrl) {
+        loadRemoteImage(imageView, remoteUrl, true, true, LOGO_WIDTH, LOGO_HEIGHT);
+    }
+
+    /**
+     * Loads a remote image using Picasso, without resizing or cropping it
+     * @param remoteUrl
+     */
+    public static void loadRemoteImageNoResize(@NonNull final ImageView imageView, @NonNull final String remoteUrl) {
+        loadRemoteImage(imageView, remoteUrl, false, false, 0, 0);
+    }
+
+    /**
+     * Loads an image using Picasso
+     *
+     * @param imageView
+     * @param remoteUrl
+     * @param resize
+     * @param centerIn
+     * @param width
+     * @param height
+     */
+    public static void loadRemoteImage(@NonNull final ImageView imageView,
+                                       @NonNull final String remoteUrl,
+                                       final boolean resize,
+                                       final boolean centerIn,
+                                       final int width,
+                                       final int height) {
+        final Context ctx = ApplicationBase.getAppContext();
+        if (null != ctx && null != imageView && null != remoteUrl && !remoteUrl.isEmpty()) {
+            RequestCreator builder = Picasso.get()
+                    .load(remoteUrl)
+                    .noFade();
+
+            if (resize) {
+                builder.resize(width, height);
+            }
+            if (centerIn) {
+                builder.centerInside();
+            }
+            builder.into(imageView);
+        }
+    }
+
+    /**
+     * Returns true if a pdf reader package is installed
+     * @param ctx
+     * @return
+     */
+    public static boolean hasPdfReaderInstalled(@NonNull final Context ctx) {
+        return (null != ctx.getPackageManager().getLaunchIntentForPackage(PDF_READER_PACKAGE));
+    }
+
+    /**
+     * Returns true if adbobe acrobat reader is installed on the system AND WORKING
+     * (sometimes it doesn't work, like the BLU phone)
+     *
+     * @param ctx
+     * @param pdfUrl
+     * @return
+     */
+    public static boolean hasPdfReaderInstalled(@NonNull final Context ctx, @NonNull Uri pdfUrl) {
+        final Intent pdfIntent = new Intent(Intent.ACTION_VIEW);
+        pdfIntent.setDataAndType(pdfUrl, "application/pdf");
+
+        List list = ctx.getPackageManager().queryIntentActivities(pdfIntent, PackageManager.MATCH_DEFAULT_ONLY);
+        return list.size() > 0;
+    }
+
+    /**
+     * Displays the PDF by creating a new intent
+     *
+     * @param ctx
+     * @param pdfDocument
+     */
+    public static void displayPdf(final Context ctx, final String pdfDocument) {
+        boolean displayed = false;
+        if (null != pdfDocument && null != ctx) {
+            LG.Info(TAG, "ATTEMPTING TO SHOW PDF: %s", pdfDocument);
+            final Uri pdfUrl = Uri.parse(pdfDocument);
+            final boolean hasPdfReader = hasPdfReaderInstalled(ctx, pdfUrl);
+            if (hasPdfReader) {
+                final Intent pdfIntent = new Intent(Intent.ACTION_VIEW);
+                pdfIntent.setDataAndType(pdfUrl, "application/pdf");
+                pdfIntent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+
+                Intent intent = Intent.createChooser(pdfIntent, ctx.getString(R.string.view_pdf));
+                try {
+                    ctx.startActivity(intent);
+                    displayed = true;
+                } catch (ActivityNotFoundException e) {
+                    LG.Error(TAG, "FAILED TO SHOW PDF:", e);
+                    displayed = false;
+                } catch(Exception ex) {
+                    LG.Error(TAG, "FAILED TO SHOW PDF:", ex);
+                    displayed = false;
+                }
+            }
+            if (!displayed) {
+                displayPdfInWebView(ctx, pdfDocument);
+            }
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    public void requestIgnoreBatteryOptimizations() {
+        final Intent intent = new Intent();
+        final String packageName = getPackageName();
+        final PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+            intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:" + packageName));
+            startActivity(intent);
+        }
+//        else {
+//            intent.setAction(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+//        }
+    }
+
+    /**
+     * Displays PDF as a fallback in the web browser using google docs viewer
+     *
+     * @param ctx
+     * @param pdfDocument
+     * @return
+     */
+    public static void displayPdfInWebView(@NonNull Context ctx, @NonNull String pdfDocument) {
+        // attempt to display it in google docs viewer in a browser window
+        final Intent webIntent = new Intent(Intent.ACTION_VIEW);
+        webIntent.setData(Uri.parse(String.format(DOCS_VIEWER_FMT, pdfDocument)));
+        ctx.startActivity(webIntent);
+    }
+}

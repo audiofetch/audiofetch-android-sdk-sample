@@ -16,6 +16,11 @@ android {
         versionCode VERSION_CODE
         versionName VERSION_NAME
     }
+      compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+      }
+
 //    compileOptions {
 //        sourceCompatibility JavaVersion.VERSION_1_7
 //        targetCompatibility JavaVersion.VERSION_1_7
@@ -77,4 +82,10 @@ dependencies {
     // required by above AudioFetch SDK lib
     implementation 'com.squareup:otto:1.3.8'
     implementation 'com.google.guava:guava:19.0'
+
+    // Audiofetch API Dependancies
+    implementation 'io.reactivex.rxjava2:rxjava:2.2.0'
+    implementation 'io.reactivex.rxjava2:rxandroid:2.0.1'
+    implementation 'com.jakewharton.rxrelay2:rxrelay:2.0.0'
+
 }

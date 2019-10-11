@@ -22,6 +22,9 @@ import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.media.AudioManager;
+import android.content.Context;
+import com.audiofetch.afaudiolib.bll.helpers.PREFS;
 
 /* bye
 import com.audiofetch.afaudiolib.bll.colleagues.AudioController;
@@ -72,6 +75,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     public final static String FONT_BOLD = "fonts/proxima_nova_bold.otf";
 
     public final static String PREF_LAST_VOLUME = "lastVolume";
+    private static final String PREF_FIRST_LAUNCH = "prefIsFirstLaunch";
     public final static int PREF_LAST_VOLUME_DEFAULT = 65;
 
     public final static String PREF_BATTERY_PERMISSION_REQUESTED = "prefIgnoreBatteryOptimizeRequested";
@@ -100,6 +104,10 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     protected ChannelGridAdapter mGridViewAdapter;
     protected SharedPreferences sharedPrefs;
     protected ImageButton mPlayPause;
+
+    protected float mLastVolume;
+    protected float mMaxVolume;
+
 
     /*==============================================================================================
     // OVERRIDES
@@ -144,6 +152,9 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
         //bye mAudioController.setVolumeControl(mVolumeControl);
         //bye mAudioController.setVolume(lastVolume);
         //mcj xxx setupVolumeControl
+
+        setupVolumeControl();
+
 
         mGridView = mView.findViewById(R.id.channel_grid);
         mGridView.setOnItemClickListener(mChannelTappedListener);
@@ -233,9 +244,129 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
         super.onResume();
     }
 
-    /*==============================================================================================
-    // BUS EVENTS
-    //============================================================================================*/
+    /**
+     * Sets the SeekBar to use as a volume control, so AudioController can become the
+     * SeekBar.OnSeekBarChangeListener, for the SeekBar
+     *f
+     * @param seekbar
+     * @return
+     */
+    public void setupVolumeControl() {
+
+        final MainActivity ma = getMainActivity();
+        final AudioManager am = (AudioManager) ma.getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
+        mMaxVolume = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+
+        if (null != mVolumeControl) {
+            mVolumeControl.setMax(0); // android Seekbar bug: (issue 12945) https://issuetracker.google.com/issues/36923384
+            mVolumeControl.setMax( (int) mMaxVolume);
+            final boolean isFirstLaunch = PREFS.getBoolean(PREF_FIRST_LAUNCH, true); // read it
+            PREFS.putBoolean(PREF_FIRST_LAUNCH, false); // set it
+
+            int startingHighVolume = Math.round((float) mMaxVolume * 0.90f),
+                    lastVolume = (int) mLastVolume,
+                    highVolume = Math.round((float) mMaxVolume * 0.75f);
+            if (!isFirstLaunch) {
+                lastVolume = getLastUserVolume();
+            }
+            if (lastVolume >= highVolume) { // dont let volume start too high
+                lastVolume = startingHighVolume; // prevent speaker/earbud blowout
+                // TODO: toast here??? explaining were turning down the volume a bit???
+            }
+            setVolume(lastVolume);
+            mVolumeControl.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, final int progress, boolean fromUser) {
+                    if (fromUser) {
+                        setVolume(progress);
+                        /*bye
+                        mUiHandler.post(new Runnable() {
+                            @Override
+
+                            public void run() {
+                                //mcj bye api().outMsgs().send(new AfApi.VolumeChangeMsg(getSystemVolume()));
+                                updateUIVolume( getSystemVolume() );
+                            }
+                        });
+                        */
+                    }
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+
+                }
+            });
+        }
+    }
+
+
+
+    /**
+     * Sets the volume into last user volume, and throughout the apps processors, and android audio
+     *
+     * @param volume
+     */
+    public boolean setVolume(int volume) {
+        boolean success = false;
+        final MainActivity ma = getMainActivity();
+        final AudioManager am = (AudioManager) ma.getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
+
+        if (null != am && volume <= mMaxVolume && volume >= 0) {
+            mMaxVolume = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+            /*mcj
+            if (AFAudioService.isPaused() && null != ActivityBase.getInstance().getAudioService()) {
+
+                // needed in case AFAudioService was paused in background
+                // from notification controls, or from headset being unplugged
+                ActivityBase.getInstance().getAudioService().play();
+            }
+            */
+            LG.Verbose(TAG, "SETTING VOLUME TO: %d", volume);
+            am.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0);
+
+            if (volume > 0) {
+                mLastVolume = volume;
+                PREFS.putInt(PREF_LAST_VOLUME, volume);
+            }
+
+            if (null != mVolumeControl) {
+                mVolumeControl.setProgress(volume);
+            }
+            success = true;
+        } else {
+            LG.Warn(TAG, "FAILED TO SET VOLUME: %d", volume);
+        }
+        return success;
+    }
+
+
+    public int getLastUserVolume() {
+        return PREFS.getInt(PREF_LAST_VOLUME, (int) mLastVolume);
+    }
+
+    /**
+     * Returns the volume, or -1 if unable to get the current volume level
+     *
+     * @return
+     */
+    public int getSystemVolume() {
+
+        final MainActivity ma = getMainActivity();
+        final AudioManager am = (AudioManager) ma.getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
+
+        int volume = -1;
+        if (null != am ) {
+            volume = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+        }
+        return volume;
+    }
+
 
     /**
      * This is fired when the AudioFetch connection goes from one of these states:
@@ -353,7 +484,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
         }
     }
 */
-    
+
     /**
      * Triggered by {@link com.audiofetch.afaudiolib.bll.colleagues.AudioController} for a Wifi event (e.g., user turns off wifi, no wifi present)
      *

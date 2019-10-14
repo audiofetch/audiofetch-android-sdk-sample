@@ -75,7 +75,6 @@ public class ActivityBase extends Activity {
     protected AFAudioService mAFAudioSvc;
     protected boolean mIsAFAudioSvcBound = false;
     protected ServiceConnection mAFAudioSvcConn;
-    protected AfApi mAfApi = null;
 
 
 
@@ -134,7 +133,7 @@ public class ActivityBase extends Activity {
             LG.Error(TAG, "UNKNOWN ERRROR: ", ex);
         }
 
-        // Start the AudioFetch Service
+        //bye // Start the AudioFetch Service
         startAFAudioService();
     }
 
@@ -216,10 +215,9 @@ public class ActivityBase extends Activity {
 
                         if (null != mAFAudioSvc) {
                             Context ctx = getApplicationContext();
-                            mAfApi = mAFAudioSvc.api();
                             // app context must be set before initing audio subsystem
-                            mAfApi.setAppContext( getApplicationContext() );
-                            mAfApi.inMsgs().send( new AfApi.InitAudioSubsystemMsg() );
+                            AFAudioService.api().setAppContext( getApplicationContext() );
+                            AFAudioService.api().inMsgs().send( new AfApi.InitAudioSubsystemMsg() );
 
                             mIsAFAudioSvcBound = true;
                             mAFAudioSvc.hideNotifcations();
@@ -233,12 +231,13 @@ public class ActivityBase extends Activity {
                                 }
                             });
 
+
                             LG.Debug(TAG, "In and out API connected.");
                         
                             doSubscriptions();
                             /*
                             LG.Debug(TAG, "Listening for messages.");
-                            mAfApi.outMsgs()
+                            AFAudioService.api().outMsgs()
                                 .asFlowable()
                                 .observeOn(AndroidSchedulers.mainThread())
                                 .subscribe(
@@ -285,17 +284,13 @@ public class ActivityBase extends Activity {
             mUiHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    //mAFAudioSvc.play(); qqq
-                    if ( mAfApi != null) {
-                        mAfApi.inMsgs().send(new AfApi.PlayAudioMsg());
-                    }
-
+                  
+                    AFAudioService.api().startAudio();
                 }
             }, 500);
         }
         return started;
     }
-
 
 
     /**

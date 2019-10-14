@@ -444,6 +444,16 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                     }
                 }
 
+                // Now that we have channels, start the audio.
+                mUiHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        //bye AFAudioService.api().stopAudio();
+                        AFAudioService.api().startAudio();
+                    }
+                }, 500);
+
+                // Show the battery optimizations info dialog.
                 mUiHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
@@ -637,10 +647,10 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
             public void run() {
                 if (isPaused) {
                     //bye mAudioController.pauseAudio();
-                    AFAudioService.api().pause();
+                    AFAudioService.api().stopAudio();
                 } else {
                     //bye mAudioController.startAudio();
-                    AFAudioService.api().play();
+                    AFAudioService.api().startAudio();
                 }
             }
         }, 250);

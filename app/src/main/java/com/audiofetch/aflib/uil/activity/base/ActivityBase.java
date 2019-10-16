@@ -32,12 +32,9 @@ import android.content.ComponentName;
 import android.os.IBinder;
 
 import com.audiofetch.aflib.bll.app.ApplicationBase;
-//bye import com.audiofetch.afaudiolib.bll.event.ChannelChangedEvent;
-//bye import com.audiofetch.afaudiolib.bll.event.EventBus;
 import com.audiofetch.afaudiolib.bll.helpers.LG;
 import com.audiofetch.aflib.R;
 import com.audiofetch.aflib.uil.activity.ExitActivity;
-//bye import com.squareup.otto.Bus;
 
 
 import dmax.dialog.SpotsDialog;
@@ -149,18 +146,17 @@ public class ActivityBase extends Activity {
             LG.Error(TAG, "UNKNOWN ERRROR: ", ex);
         }
 
-        //bye // Start the AudioFetch Service
+        // Start the AudioFetch Service
         startAFAudioService();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        //bye mEventBus.register(this);
+        //mcj mEventBus.register(this);
         mUiHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                //bye mEventBus.post(new ChannelChangedEvent(0));
                 AFAudioService.api().outMsgs().send( new AfApi.ChannelChangedMsg(0));
             }
         }, 1010);
@@ -181,7 +177,7 @@ public class ActivityBase extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        //mcj bye mEventBus.unregister(this);
+        //mcj mEventBus.unregister(this);
         dismissProgress();
     }
 
@@ -238,8 +234,6 @@ public class ActivityBase extends Activity {
                             mIsAFAudioSvcBound = true;
                             mAFAudioSvc.hideNotifcations();
 
-                            //bye mAudioController = mAFAudioSvc.getAudioController();
-                            //bye mAudioController.setVolumeControlStream(ActivityBase.this);
                             mUiHandler.post(new Runnable() {
                                 @Override
                                 public void run() {
@@ -251,20 +245,6 @@ public class ActivityBase extends Activity {
                             LG.Debug(TAG, "In and out API connected.");
                         
                             doSubscriptions();
-                            /*
-                            LG.Debug(TAG, "Listening for messages.");
-                            AFAudioService.api().outMsgs()
-                                .asFlowable()
-                                .observeOn(AndroidSchedulers.mainThread())
-                                .subscribe(
-                                    msg -> {
-                                      if (msg instanceof ApiMessenger.ChannelsReceivedMsg) {
-                                        ApiMessenger.ChannelsReceivedMsg  crMsg = (ApiMessenger.ChannelsReceivedMsg) msg;
-                                        channelsReceived(crMsg);
-                                      }
-                                      qqq
-                                    });
-                            */
                         }
                     }
                 }
@@ -300,7 +280,6 @@ public class ActivityBase extends Activity {
             mUiHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                  
                     AFAudioService.api().startAudio();
                 }
             }, 500);

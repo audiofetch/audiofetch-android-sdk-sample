@@ -227,7 +227,7 @@ public class ApplicationBase extends Application {
      */
     public static void  restartApp(Context ctx){
         if (null != ctx) {
-            /*mcjIntent intent = new Intent(ctx, MainActivity.class);
+            Intent intent = new Intent(ctx, MainActivity.class);
             PendingIntent pi = PendingIntent.getActivity(ctx, 0, intent, 0);
             AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
             if(Build.VERSION.SDK_INT >= 19 ) {
@@ -235,7 +235,7 @@ public class ApplicationBase extends Application {
             }else{
                 am.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 500, pi);
             }
-             */
+            
             killApp();
         }
     }

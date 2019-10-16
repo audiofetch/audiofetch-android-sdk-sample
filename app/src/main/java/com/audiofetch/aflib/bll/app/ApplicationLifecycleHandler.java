@@ -8,7 +8,7 @@ import android.os.Bundle;
 import android.os.Process;
 
 import com.audiofetch.afaudiolib.bll.helpers.LG;
-//mcjimport com.audiofetch.afaudiolib.uil.activity.MainActivity;
+import com.audiofetch.aflib.uil.activity.MainActivity;
 
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 public class ApplicationLifecycleHandler implements Application.ActivityLifecycleCallbacks {
@@ -73,8 +73,7 @@ public class ApplicationLifecycleHandler implements Application.ActivityLifecycl
     @Override
     public void onActivityDestroyed(Activity activity) {
         LG.Info(TAG, "Activity destroyed: %s", activity);
-        //mcj orig: if (null != activity && activity instanceof MainActivity) {
-            if (null != activity ) {
+        if (null != activity && activity instanceof MainActivity) {
             try {
                 if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1) {
                     // fix for app not exiting fully when swiped off screen on 5.1 devices

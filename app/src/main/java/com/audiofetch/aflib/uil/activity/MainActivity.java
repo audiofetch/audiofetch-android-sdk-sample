@@ -14,15 +14,6 @@ import com.audiofetch.aflib.uil.activity.base.ActivityBase;
 import com.audiofetch.aflib.uil.fragment.PlayerFragment;
 import com.audiofetch.aflib.bll.app.ApplicationBase;
 
-/*bye
-import com.audiofetch.afaudiolib.bll.colleagues.AudioController;
-import com.audiofetch.afaudiolib.bll.event.AudioFocusEvent;
-import com.audiofetch.afaudiolib.bll.event.ChannelsReceivedEvent;
-import com.audiofetch.afaudiolib.bll.event.WifiStatusEvent;
-import com.audiofetch.afaudiolib.bll.helpers.LG;
-import com.squareup.otto.Subscribe;
-*/
-
 // Audiofetch API
 import com.audiofetch.afaudiolib.bll.app.AFAudioService;
 import com.audiofetch.afaudiolib.api.AfApi;
@@ -65,29 +56,17 @@ public class MainActivity extends ActivityBase {
         final String action = (null != intent) ? intent.getAction() : null;
         if (null != action) {
             Uri data = intent.getData();
-            //hi?LG.Verbose(TAG, "App started from intent: %s with data: %s", action, data);
+            // LG.Verbose(TAG, "App started from intent: %s with data: %s", action, data);
             // TODO: add other deeplinks besides the default as needed
         }
 
-        //mcj hi if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         requestIgnoreBatteryOptimizations();
-        //mcj hi}
-
-
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         showPlayerFragment();
-        afterDelay(new Runnable() {
-            @Override
-            public void run() {
-                //bye if (!getAudioController().isAudioPlaying()) {
-                //bye     getAudioController().startAudio(STARTING_CHANNEL);
-                //bye }
-            }
-        }, 500);
     }
 
     @Override
@@ -124,7 +103,7 @@ public class MainActivity extends ActivityBase {
 
     @Override
     protected void onDestroy() { // not called every time
-        //bye mAudioController.onDestroy();
+        //mcj mAudioController.onDestroy();
         super.onDestroy();
     }
 
@@ -221,10 +200,8 @@ public class MainActivity extends ActivityBase {
      * @see AudioManager
      */
     public void onAudioFocusEvent(final AfApi.AudioFocusMsg msg) {
-        //hi? LG.Verbose(TAG, "AudioFocus gained: %s", (AudioManager.AUDIOFOCUS_GAIN == msg.focusChange));
+        LG.Verbose(TAG, "AudioFocus gained: %s", (AudioManager.AUDIOFOCUS_GAIN == msg.focusChange));
     }
-
-
 
     /**
      * Pops off any fragments that are covering the player

@@ -24,18 +24,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.media.AudioManager;
 import android.content.Context;
-import com.audiofetch.afaudiolib.bll.helpers.PREFS;
-
-/* bye
-import com.audiofetch.afaudiolib.bll.colleagues.AudioController;
-import com.audiofetch.afaudiolib.bll.event.AudioStateEvent;
-import com.audiofetch.afaudiolib.bll.event.ChannelChangedEvent;
-import com.audiofetch.afaudiolib.bll.event.ChannelSelectedEvent;
-import com.audiofetch.afaudiolib.bll.event.ChannelsReceivedEvent;
-import com.audiofetch.afaudiolib.bll.event.VolumeChangeEvent;
-import com.audiofetch.afaudiolib.bll.event.WifiStatusEvent;
-import com.squareup.otto.Subscribe;
-*/
 
 import com.audiofetch.afaudiolib.bll.helpers.LG;
 import com.audiofetch.afaudiolib.bll.helpers.PREFS;
@@ -45,15 +33,12 @@ import com.audiofetch.aflib.uil.activity.MainActivity;
 import com.audiofetch.aflib.uil.adapter.ChannelGridAdapter;
 import com.audiofetch.aflib.uil.fragment.base.FragmentBase;
 
-
 // AudioFetch Service API
 import com.audiofetch.afaudiolib.bll.app.AFAudioService;
 import com.audiofetch.afaudiolib.api.AfApi;
 import com.audiofetch.afaudiolib.api.ApiMessenger;
 import io.reactivex.Flowable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-
-
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,13 +69,11 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     protected boolean mConnectionMsgShown = false;
     protected static List<Integer> mChannelIntegerList = new ArrayList<>();
     protected static List<Channel> mChannels = new ArrayList<>();
-    // mcj bye protected static AudioController mAudioController;
 
     /**
      * Tracks fragment load at static/app level
      */
     protected static AtomicInteger mLoadCount = new AtomicInteger(0);
-    // mcj bye protected static boolean mIsBusRegistered;
 
     protected boolean mChannelsLoaded = false,
             isPaused = false;
@@ -116,7 +99,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //bye mAudioController = getMainActivity().getAudioController();
         sharedPrefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
     }
 
@@ -149,12 +131,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
         mVolumeControl = mView.findViewById(R.id.volume_slider);
         mVolumeControl.setProgress(lastVolume);
 
-        //bye mAudioController.setVolumeControl(mVolumeControl);
-        //bye mAudioController.setVolume(lastVolume);
-        //mcj xxx setupVolumeControl
-
         setupVolumeControl();
-
 
         mGridView = mView.findViewById(R.id.channel_grid);
         mGridView.setOnItemClickListener(mChannelTappedListener);
@@ -175,19 +152,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
         final int loadCount = mLoadCount.incrementAndGet();
         final boolean isFirstLoad = (1 == loadCount);
 
-        /* bye
-        if (!mIsBusRegistered) {
-            try {
-                MainActivity.getBus().register(this);
-                mIsBusRegistered = true;
-            } catch (RuntimeException ex) {
-                LG.Error(TAG, "BUS ALREADY REGISTERED: ", ex);
-            } catch (Exception ex) {
-                LG.Error(TAG, "UNKNOWN BUS ERROR: ", ex);
-            }
-        }
-        */
-
         AFAudioService.api().outMsgs()
             .asFlowable()
             .observeOn(AndroidSchedulers.mainThread())
@@ -201,7 +165,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                     AfApi.WifiStatusMsg  pMsg = (AfApi.WifiStatusMsg) msg;
                     onWifiStatusMsg(pMsg);
                   }
-                  /* bye else if (msg instanceof AfApi.AudioFocusMsg) {
+                  /* mcj else if (msg instanceof AfApi.AudioFocusMsg) {
                     AfApi.AudioFocusMsg  pMsg = (AfApi.AudioFocusMsg) msg;
                     onAudioFocusEvent(pMsg);
                   } 
@@ -231,11 +195,11 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
 
     @Override
     public void onStop() {
-        //mcj bye if (mIsBusRegistered) {
+        //mcj if (mIsBusRegistered) {
             // remove any possible pending callbacks
-            // mcj bye MainActivity.getBus().unregister(this);
-            //mcj bye mIsBusRegistered = false;
-        //mcj bye }
+            // mcj MainActivity.getBus().unregister(this);
+            //mcj mIsBusRegistered = false;
+        //mcj }
         super.onStop();
     }
 
@@ -279,16 +243,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                 public void onProgressChanged(SeekBar seekBar, final int progress, boolean fromUser) {
                     if (fromUser) {
                         setVolume(progress);
-                        /*bye
-                        mUiHandler.post(new Runnable() {
-                            @Override
-
-                            public void run() {
-                                //mcj bye api().outMsgs().send(new AfApi.VolumeChangeMsg(getSystemVolume()));
-                                updateUIVolume( getSystemVolume() );
-                            }
-                        });
-                        */
                     }
                 }
 
@@ -319,14 +273,12 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
 
         if (null != am && volume <= mMaxVolume && volume >= 0) {
             mMaxVolume = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-            /*mcj
-            if (AFAudioService.isPaused() && null != ActivityBase.getInstance().getAudioService()) {
-
-                // needed in case AFAudioService was paused in background
-                // from notification controls, or from headset being unplugged
-                ActivityBase.getInstance().getAudioService().play();
+            // needed in case AFAudioService was paused in background
+            // from notification controls, or from headset being unplugged
+            if (AFAudioService.api().isAudioPlaying() == false) {
+                AFAudioService.api().startAudio();
             }
-            */
+
             LG.Verbose(TAG, "SETTING VOLUME TO: %d", volume);
             am.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0);
 
@@ -378,7 +330,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
         switch (msg.state) {
             case AfApi.AudioStateMsg.STATE_DISCOVERING: {
                 // This is triggered repeatedly while the AudioFetch SDK is performing discovery
-                //bye if (!mAudioController.isAudioSourceConnected() && !mConnectionMsgShown) {
                 if (!AFAudioService.api().isAudioSourceConnected() && !mConnectionMsgShown) {
                     getMainActivity().showProgress(getString(R.string.fetching_audio));
                     mConnectionMsgShown = true;
@@ -386,7 +337,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                 break;
             }
             case AfApi.AudioStateMsg.STATE_PLAYING: {
-                //bye if (mAudioController.isAudioSourceConnected()) {
                 if (!AFAudioService.api().isAudioSourceConnected()) {
                     // This is triggered repeatedly while audio is playing with no dropouts
                 }
@@ -477,7 +427,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
      *
      * @param event
      */
-/*mcj bye?    public void onChannelSelectedMsg(final AfApi.ChannelSelectedMsg msg) {
+/*mcj    public void onChannelSelectedMsg(final AfApi.ChannelSelectedMsg msg) {
         try {
             if (msg.fromClick && !msg.fromChannelControl) { // handles tapping on a side channel, or same channel in some cases
                 return;
@@ -537,7 +487,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
      * @param event
      */
     // mcj possible bye
-    /*bye
+    /*
     @SuppressWarnings("unused")
     public void onVolumeChangeEvent(final VolumeChangeEvent event) {
         LG.Info(TAG, "Volume changed to: %d", event.volume);

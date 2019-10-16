@@ -22,7 +22,7 @@ import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import com.audiofetch.afaudiolib.bll.helpers.LG;
-//mcj import com.audiofetch.afaudiolib.uil.activity.MainActivity;
+import com.audiofetch.aflib.uil.activity.MainActivity;
 
 import java.lang.ref.WeakReference;
 import java.net.InetAddress;
@@ -97,11 +97,11 @@ public class ApplicationBase extends Application {
     public void finish() {
         boolean handled = false;
         try {
-            /*mcjMainActivity ma = (MainActivity) MainActivity.getInstance();
+            MainActivity ma = (MainActivity) MainActivity.getInstance();
             if (null != ma) {
                 handled = true;
                 ma.exitApplicationClearHistory();
-            }*/
+            }
 
         } catch(ClassCastException ex) {
             LG.Error(TAG, "Cannot close main activity", ex);

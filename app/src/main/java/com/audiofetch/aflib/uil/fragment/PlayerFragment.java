@@ -448,7 +448,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                 mUiHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        //bye AFAudioService.api().stopAudio();
                         AFAudioService.api().startAudio();
                     }
                 }, 500);

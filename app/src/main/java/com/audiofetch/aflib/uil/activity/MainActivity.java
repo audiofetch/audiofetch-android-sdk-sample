@@ -12,6 +12,7 @@ import android.annotation.TargetApi;
 
 import com.audiofetch.aflib.uil.activity.base.ActivityBase;
 import com.audiofetch.aflib.uil.fragment.PlayerFragment;
+import com.audiofetch.aflib.bll.app.ApplicationBase;
 
 /*bye
 import com.audiofetch.afaudiolib.bll.colleagues.AudioController;
@@ -161,6 +162,12 @@ public class MainActivity extends ActivityBase {
                   else if (msg instanceof AfApi.AudioFocusMsg) {
                     AfApi.AudioFocusMsg  pMsg = (AfApi.AudioFocusMsg) msg;
                     onAudioFocusEvent(pMsg);
+                  }
+                  else if (msg instanceof AfApi.ApplicationFinishMsg) {
+                    ApplicationBase ab = ApplicationBase.getInstance();
+                    if (null != ab) {
+                        ab.finish();
+                    }
                   }
                   /* mcj  hi?
                   else if (msg instanceof AfApi.AudioReadyMsg) {

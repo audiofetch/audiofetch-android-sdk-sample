@@ -24,6 +24,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.Toast;
+import android.support.annotation.Nullable;
+import java.lang.ref.WeakReference;
 
 import android.content.ServiceConnection;
 import android.content.ComponentName;
@@ -63,6 +65,8 @@ public class ActivityBase extends Activity {
 
     public static final int MAIN_CONTAINER_RESID = R.id.main_container;
 
+    protected static WeakReference<ActivityBase> mInstance; // static works since we have 1 activity
+
     protected FragmentManager mFragManager;
 
     protected AlertDialog mProgressDialog;
@@ -76,6 +80,18 @@ public class ActivityBase extends Activity {
     protected boolean mIsAFAudioSvcBound = false;
     protected ServiceConnection mAFAudioSvcConn;
 
+
+    // Constructor
+    public ActivityBase() {
+        super();
+        mInstance = new WeakReference<>(this);
+    }
+
+    // Singleton access
+    @Nullable
+    public static ActivityBase getInstance() {
+        return (null != mInstance) ? mInstance.get() : null;
+    }
 
 
     /*==============================================================================================

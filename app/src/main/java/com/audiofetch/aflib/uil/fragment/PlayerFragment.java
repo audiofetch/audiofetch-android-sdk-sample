@@ -459,13 +459,20 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     public boolean onKeyDown(final int keyCode, final KeyEvent event) {
         boolean success = false;
         AtomicInteger currentVolume = new AtomicInteger(-1);
-        /*mcj hi
-        if (null != getMainActivity() && null != mAudioController) {
-            if (mAudioController.onKeyDown(keyCode, event, currentVolume) && currentVolume.intValue() >= 0) {
-                success = true;
-            }
+        
+        boolean handled = false;
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+            mLastVolume = ((mLastVolume + 1) <= mMaxVolume) ? ++mLastVolume : mMaxVolume;
+            setVolume( (int) mLastVolume);
+            handled = true;
+        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            mLastVolume = (float) ( ((mLastVolume - 1) > 0) ? --mLastVolume : 0 );
+            setVolume( (int) mLastVolume);
+            handled = true;
         }
-        */
+
+        currentVolume.set( (int) mLastVolume);
+
         return success;
     }
 
@@ -483,6 +490,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
             mChannelsLoaded = true;
         }
     }
+
 
     /**
      * Checks to ensure that doze mode is disabled.

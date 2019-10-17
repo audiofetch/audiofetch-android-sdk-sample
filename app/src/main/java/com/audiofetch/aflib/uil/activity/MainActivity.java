@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.annotation.TargetApi;
+import android.util.Log;
 
 import com.audiofetch.aflib.uil.activity.base.ActivityBase;
 import com.audiofetch.aflib.uil.fragment.PlayerFragment;
@@ -56,7 +57,6 @@ public class MainActivity extends ActivityBase {
         final String action = (null != intent) ? intent.getAction() : null;
         if (null != action) {
             Uri data = intent.getData();
-            // LG.Verbose(TAG, "App started from intent: %s with data: %s", action, data);
             // TODO: add other deeplinks besides the default as needed
         }
 
@@ -124,7 +124,7 @@ public class MainActivity extends ActivityBase {
 
     @Override
     public void doSubscriptions() {
-        //hi? LG.Debug(TAG, "Listening for messages.");
+        Log.i(TAG, "Listening for AudioFetch Service messages.");
         AFAudioService.api().outMsgs()
             .asFlowable()
             .observeOn(AndroidSchedulers.mainThread())
@@ -158,7 +158,7 @@ public class MainActivity extends ActivityBase {
      * @param event
      */
     public void onWifiStatusEvent(final AfApi.WifiStatusMsg msg) {
-        //hi? LG.Info(TAG, "Event is: %s", event);
+        Log.i(TAG, "AFApi WifiStatusMsg");
     }
 
     /**
@@ -186,7 +186,7 @@ public class MainActivity extends ActivityBase {
      * @see AudioManager
      */
     public void onAudioFocusEvent(final AfApi.AudioFocusMsg msg) {
-        LG.Verbose(TAG, "AudioFocus gained: %s", (AudioManager.AUDIOFOCUS_GAIN == msg.focusChange));
+        Log.i(TAG,  "AudioFocusMsg");
     }
 
     /**

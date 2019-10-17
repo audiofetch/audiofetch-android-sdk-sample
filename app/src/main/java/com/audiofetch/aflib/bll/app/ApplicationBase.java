@@ -79,7 +79,7 @@ public class ApplicationBase extends Application {
                 registerLifecycleHandler();
             }
         } catch(Exception ex) {
-            LG.Error(TAG, "Error", ex);
+            Log.e(TAG, "Error", ex);
         } finally {
             ApplicationBase.mInstance = new WeakReference<>(this);
             ApplicationBase.mContext = new WeakReference<>(getApplicationContext());
@@ -104,9 +104,9 @@ public class ApplicationBase extends Application {
             }
 
         } catch(ClassCastException ex) {
-            LG.Error(TAG, "Cannot close main activity", ex);
+            Log.e(TAG, "Cannot close main activity", ex);
         } catch(Exception ex) {
-            LG.Error(TAG, "Cannot close main activity", ex);
+            Log.e(TAG, "Cannot close main activity", ex);
         } finally {
             if (!handled) {
                 android.os.Process.killProcess(android.os.Process.myPid());

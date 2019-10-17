@@ -1230,7 +1230,7 @@ public class ActivityBase extends SlidingFragmentActivity {
 
     /*bye
     private void channelsReceived(ApiMessenger.ChannelsReceivedMsg msg) {
-        LG.Debug(TAG, "AFAudioService mcj channels received! ...on thread: " + Thread.currentThread().getName());
+        LG.Debug(TAG, "AFAudioService channels received! ...on thread: " + Thread.currentThread().getName());
     }
     */
     

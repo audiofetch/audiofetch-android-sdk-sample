@@ -165,19 +165,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                     AfApi.WifiStatusMsg  pMsg = (AfApi.WifiStatusMsg) msg;
                     onWifiStatusMsg(pMsg);
                   }
-                  /* mcj else if (msg instanceof AfApi.AudioFocusMsg) {
-                    AfApi.AudioFocusMsg  pMsg = (AfApi.AudioFocusMsg) msg;
-                    onAudioFocusEvent(pMsg);
-                  } 
-                  else if (msg instanceof AfApi.AudioReadyMsg) {
-                    AfApi.AudioReadyMsg  pMsg = (AfApi.AudioReadyMsg) msg;
-                    onAudioReadyMsg(pMsg);
-                  }
-                  else if (msg instanceof AfApi.AudioPreferenceChangeMsg) {
-                    AfApi.AudioPreferenceChangeMsg  pMsg = (AfApi.AudioPreferenceChangeMsg) msg;
-                    onAudioPreferenceChangeMsg(pMsg);
-                  }
-                  */
                   else if (msg instanceof AfApi.AudioStateMsg) {
                     AfApi.AudioStateMsg  pMsg = (AfApi.AudioStateMsg) msg;
                     onAudioStateMsg(pMsg);
@@ -351,7 +338,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                 getMainActivity().dismissProgress();
                 mErrorLabel.setVisibility(View.VISIBLE);
                 mChannelText.setText(getString(R.string.channels_not_loaded));
-                checkForIgnoringBatteryOptimizations();
+                //mcj bye? checkForIgnoringBatteryOptimizations();
                 break;
             }
             case AfApi.AudioStateMsg.STATE_ERROR:
@@ -403,12 +390,13 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                 }, 500);
 
                 // Show the battery optimizations info dialog.
-                mUiHandler.postDelayed(new Runnable() {
+                /*mcj bye? mUiHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         checkForIgnoringBatteryOptimizations();
                     }
                 }, 3000);
+                */
             }
         }
         if (mChannels.size() > 0) {
@@ -418,31 +406,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
             setupChannels();
         }
     }
-
-    /**
-     * This is triggered multiple places in the app, but typically by the channel buttons
-     * <p>
-     * Note:  in Android Studio -
-     * perform a right-click and find usage on ChannelSelectedEvent to find its usages
-     *
-     * @param event
-     */
-/*mcj    public void onChannelSelectedMsg(final AfApi.ChannelSelectedMsg msg) {
-        try {
-            if (msg.fromClick && !msg.fromChannelControl) { // handles tapping on a side channel, or same channel in some cases
-                return;
-            }
-            if (null != msg && msg.channel > -1) {
-                mCurrentChannel = msg.channel;
-                //mcj bye mAudioController.setChannel(mCurrentChannel);
-                //mcj bye MainActivity.getBus().post(new ChannelChangedEvent(mCurrentChannel));
-                AFAudioService.api().inMsgs().send(new AfApi.SetChannelMsg( mCurrentChannel ));
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-*/
 
     /**
      * Triggered by {@link com.audiofetch.afaudiolib.bll.colleagues.AudioController} for a Wifi event (e.g., user turns off wifi, no wifi present)
@@ -481,20 +444,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
         }
     }
 
-    /**
-     * This is triggered when the volume has changed via the keyboard, device buttons
-     *
-     * @param event
-     */
-    // mcj possible bye
-    /*
-    @SuppressWarnings("unused")
-    public void onVolumeChangeEvent(final VolumeChangeEvent event) {
-        LG.Info(TAG, "Volume changed to: %d", event.volume);
-        sharedPrefs.edit()
-                .putInt(PREF_LAST_VOLUME, event.volume)
-                .commit();
-    }*/
 
     /*==============================================================================================
     // INSTANCE METHODS
@@ -525,7 +474,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
      */
     public synchronized void setupChannels() {
         if (!mChannelsLoaded) {
-            // mcj bye mCurrentChannel = getMainActivity().getAudioController().getCurrentChannel();
             mCurrentChannel = AFAudioService.api().getCurrentChannel();
             mGridViewAdapter = new ChannelGridAdapter(mChannels, mCurrentChannel, getActivity());
             mGridView.setAdapter(mGridViewAdapter);
@@ -539,6 +487,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     /**
      * Checks to ensure that doze mode is disabled.
      */
+    /*mcj bye?
     protected void checkForIgnoringBatteryOptimizations() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             final boolean hasRequestedPerms = PREFS.getBoolean(PREF_BATTERY_PERMISSION_REQUESTED, false);
@@ -552,6 +501,8 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
             }
         }
     }
+    */
+
 
     /*==============================================================================================
     // NESTED CLASSES

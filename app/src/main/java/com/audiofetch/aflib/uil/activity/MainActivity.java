@@ -148,20 +148,6 @@ public class MainActivity extends ActivityBase {
                         ab.finish();
                     }
                   }
-                  /* mcj  hi?
-                  else if (msg instanceof AfApi.AudioReadyMsg) {
-                    AfApi.AudioReadyMsg  pMsg = (AfApi.AudioReadyMsg) msg;
-                    onAudioReadyEvent(pMsg);
-                  }
-                  else if (msg instanceof AfApi.AudioPreferenceChangeMsg) {
-                    AfApi.AudioPreferenceChangeMsg  pMsg = (AfApi.AudioPreferenceChangeMsg) msg;
-                    onAudioPreferenceChangeEvent(pMsg);
-                  }
-                  else if (msg instanceof AfApi.AudioStateMsg) {
-                    AfApi.AudioStateMsg  pMsg = (AfApi.AudioStateMsg) msg;
-                    onAudioStateEvent(pMsg);
-                  }
-                  */
 
                 });
     }
@@ -212,13 +198,6 @@ public class MainActivity extends ActivityBase {
         }
         switchContent(mPlayerFragment, PlayerFragment.TAG);
     }
-
-    //bye /**
-    //bye  * Whitelists the app for ignoring battery optimiztions.
-    //bye  */
-    //bye public void whitelistAppForBattery() {
-    //bye    getAudioController().whitelistAppForBatteryOptimizations(this);
-    //bye }
 
     @TargetApi(Build.VERSION_CODES.M)
     public void requestIgnoreBatteryOptimizations() {

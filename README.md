@@ -34,4 +34,11 @@ Add AudioFetch Service to ApplicationManifest.xml
         </service>
 
 
+Add Permissions to ApplicationManifest.xml
+
+
+Add AudioFetch SDK library to your application.
+
+
+
 

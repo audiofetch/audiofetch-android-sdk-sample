@@ -224,6 +224,10 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                 lastVolume = startingHighVolume; // prevent speaker/earbud blowout
                 // TODO: toast here??? explaining were turning down the volume a bit???
             }
+            else {
+                lastVolume = getSystemVolume();
+            }
+
             setVolume(lastVolume);
             mVolumeControl.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override

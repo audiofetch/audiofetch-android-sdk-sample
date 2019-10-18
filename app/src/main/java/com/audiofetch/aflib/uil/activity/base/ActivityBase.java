@@ -153,7 +153,7 @@ public class ActivityBase extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        //mcj mEventBus.register(this);
+        AFAudioService.api().resumeApi();
         mUiHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -177,7 +177,7 @@ public class ActivityBase extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        //mcj mEventBus.unregister(this);
+        AFAudioService.api().pauseApi();
         dismissProgress();
     }
 

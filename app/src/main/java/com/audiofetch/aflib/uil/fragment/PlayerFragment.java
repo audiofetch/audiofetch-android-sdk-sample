@@ -342,7 +342,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                 getMainActivity().dismissProgress();
                 mErrorLabel.setVisibility(View.VISIBLE);
                 mChannelText.setText(getString(R.string.channels_not_loaded));
-                //mcj bye? checkForIgnoringBatteryOptimizations();
                 break;
             }
             case AfApi.AudioStateMsg.STATE_ERROR:
@@ -393,14 +392,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                     }
                 }, 500);
 
-                // Show the battery optimizations info dialog.
-                /*mcj bye? mUiHandler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        checkForIgnoringBatteryOptimizations();
-                    }
-                }, 3000);
-                */
             }
         }
         if (mChannels.size() > 0) {
@@ -496,26 +487,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
     }
 
 
-    /**
-     * Checks to ensure that doze mode is disabled.
-     */
-    /*mcj bye?
-    protected void checkForIgnoringBatteryOptimizations() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            final boolean hasRequestedPerms = PREFS.getBoolean(PREF_BATTERY_PERMISSION_REQUESTED, false);
-            if (!hasRequestedPerms) {
-                getMainActivity().alert(R.string.battery_optimization_title, R.string.battery_optimization_msg, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        //mcj hi? getMainActivity().whitelistAppForBattery();
-                    }
-                });
-            }
-        }
-    }
-    */
-
-
     /*==============================================================================================
     // NESTED CLASSES
     //============================================================================================*/
@@ -535,11 +506,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                     mGridViewAdapter.setSelectedPosition(position)
                             .notifyDataSetChanged();
 
-                    //bye MainActivity.getBus().post(new ChannelSelectedEvent(mCurrentChannel, false, true));
-                    
-                    // what is the point of channelsSelected? It's just our app, not the service
-                    //AFAudioService.api().outMsgs().send(new AfApi.ChannelSelectedMsg( mCurrentChannel, false, true ));
-
+                    // Send set channel message to AF Api
                     AFAudioService.api().inMsgs().send(new AfApi.SetChannelMsg( mCurrentChannel ));
                 }
             }

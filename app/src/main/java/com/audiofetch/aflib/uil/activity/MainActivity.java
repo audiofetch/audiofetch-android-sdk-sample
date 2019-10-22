@@ -103,7 +103,7 @@ public class MainActivity extends ActivityBase {
 
     @Override
     protected void onDestroy() { // not called every time
-        //mcj mAudioController.onDestroy();
+        AFAudioService.api().destroyAudioSubsystem();
         super.onDestroy();
     }
 
@@ -113,7 +113,7 @@ public class MainActivity extends ActivityBase {
      */
     @Override
     public void exitApplicationClearHistory() {
-        //bye mAudioController.onDestroy();
+        AFAudioService.api().destroyAudioSubsystem();
         super.exitApplicationClearHistory();
     }
 

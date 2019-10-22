@@ -229,7 +229,8 @@ public class ActivityBase extends Activity {
                             Context ctx = getApplicationContext();
                             // app context must be set before initing audio subsystem
                             AFAudioService.api().setAppContext( getApplicationContext() );
-                            AFAudioService.api().inMsgs().send( new AfApi.InitAudioSubsystemMsg() );
+                            //bye AFAudioService.api().inMsgs().send( new AfApi.InitAudioSubsystemMsg() );
+                            AFAudioService.api().initAudioSubsystem();
 
                             mIsAFAudioSvcBound = true;
                             mAFAudioSvc.hideNotifcations();

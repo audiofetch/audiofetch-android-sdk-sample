@@ -558,10 +558,8 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
             @Override
             public void run() {
                 if (isPaused) {
-                    //bye mAudioController.pauseAudio();
                     AFAudioService.api().stopAudio();
                 } else {
-                    //bye mAudioController.startAudio();
                     AFAudioService.api().startAudio();
                 }
             }

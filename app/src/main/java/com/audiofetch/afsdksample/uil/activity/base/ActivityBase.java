@@ -1,4 +1,4 @@
-package com.audiofetch.aflib.uil.activity.base;
+package com.audiofetch.afsdksample.uil.activity.base;
 
 import android.annotation.TargetApi;
 import android.app.ActionBar;
@@ -31,10 +31,10 @@ import android.content.ServiceConnection;
 import android.content.ComponentName;
 import android.os.IBinder;
 
-import com.audiofetch.aflib.bll.app.ApplicationBase;
+import com.audiofetch.afsdksample.bll.app.ApplicationBase;
 import com.audiofetch.afaudiolib.bll.helpers.LG;
-import com.audiofetch.aflib.R;
-import com.audiofetch.aflib.uil.activity.ExitActivity;
+import com.audiofetch.afsdksample.R;
+import com.audiofetch.afsdksample.uil.activity.ExitActivity;
 
 
 import dmax.dialog.SpotsDialog;
@@ -43,9 +43,6 @@ import dmax.dialog.SpotsDialog;
 // Af API communication
 import com.audiofetch.afaudiolib.bll.app.AFAudioService;
 import com.audiofetch.afaudiolib.api.AfApi;
-import com.audiofetch.afaudiolib.api.ApiMessenger;
-import io.reactivex.Flowable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 
 /**
  * Base activity for AudioFetch SDK Sample app
@@ -152,8 +149,8 @@ public class ActivityBase extends Activity {
 
     @Override
     protected void onResume() {
+        LG.Debug(TAG, "ActivityBase.onResume");
         super.onResume();
-        AFAudioService.api().resumeApi();
         mUiHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -176,8 +173,10 @@ public class ActivityBase extends Activity {
 
     @Override
     protected void onPause() {
+
+        LG.Debug(TAG, "ActivityBase.onPause");
+
         super.onPause();
-        AFAudioService.api().pauseApi();
         dismissProgress();
     }
 
@@ -230,6 +229,7 @@ public class ActivityBase extends Activity {
                             // app context must be set before initing audio subsystem
                             AFAudioService.api().setAppContext( getApplicationContext() );
                             //bye AFAudioService.api().inMsgs().send( new AfApi.InitAudioSubsystemMsg() );
+                            LG.Debug(TAG, "initAudioSubsystem");
                             AFAudioService.api().initAudioSubsystem();
 
                             mIsAFAudioSvcBound = true;

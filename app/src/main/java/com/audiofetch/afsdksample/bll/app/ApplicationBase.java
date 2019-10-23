@@ -1,4 +1,4 @@
-package com.audiofetch.aflib.bll.app;
+package com.audiofetch.afsdksample.bll.app;
 
 import android.annotation.TargetApi;
 import android.support.annotation.Nullable;
@@ -21,8 +21,7 @@ import android.os.SystemClock;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
-import com.audiofetch.afaudiolib.bll.helpers.LG;
-import com.audiofetch.aflib.uil.activity.MainActivity;
+import com.audiofetch.afsdksample.uil.activity.MainActivity;
 
 import java.lang.ref.WeakReference;
 import java.net.InetAddress;

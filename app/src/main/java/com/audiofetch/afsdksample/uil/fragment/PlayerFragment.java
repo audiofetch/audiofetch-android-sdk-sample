@@ -1,11 +1,10 @@
-package com.audiofetch.aflib.uil.fragment;
+package com.audiofetch.afsdksample.uil.fragment;
 
 
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.graphics.Typeface;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -28,16 +27,15 @@ import android.content.Context;
 import com.audiofetch.afaudiolib.bll.helpers.LG;
 import com.audiofetch.afaudiolib.bll.helpers.PREFS;
 import com.audiofetch.afaudiolib.dal.Channel;
-import com.audiofetch.aflib.R;
-import com.audiofetch.aflib.uil.activity.MainActivity;
-import com.audiofetch.aflib.uil.adapter.ChannelGridAdapter;
-import com.audiofetch.aflib.uil.fragment.base.FragmentBase;
+import com.audiofetch.afsdksample.R;
+import com.audiofetch.afsdksample.uil.activity.MainActivity;
+import com.audiofetch.afsdksample.uil.adapter.ChannelGridAdapter;
+import com.audiofetch.afsdksample.uil.fragment.base.FragmentBase;
 
 // AudioFetch Service API
 import com.audiofetch.afaudiolib.bll.app.AFAudioService;
 import com.audiofetch.afaudiolib.api.AfApi;
-import com.audiofetch.afaudiolib.api.ApiMessenger;
-import io.reactivex.Flowable;
+
 import io.reactivex.android.schedulers.AndroidSchedulers;
 
 import java.util.ArrayList;

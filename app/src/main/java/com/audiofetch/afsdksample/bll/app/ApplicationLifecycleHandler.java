@@ -1,4 +1,4 @@
-package com.audiofetch.aflib.bll.app;
+package com.audiofetch.afsdksample.bll.app;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -8,7 +8,7 @@ import android.os.Bundle;
 import android.os.Process;
 
 import com.audiofetch.afaudiolib.bll.helpers.LG;
-import com.audiofetch.aflib.uil.activity.MainActivity;
+import com.audiofetch.afsdksample.uil.activity.MainActivity;
 
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 public class ApplicationLifecycleHandler implements Application.ActivityLifecycleCallbacks {

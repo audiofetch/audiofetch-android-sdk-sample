@@ -1,4 +1,4 @@
-package com.audiofetch.aflib.uil.activity;
+package com.audiofetch.afsdksample.uil.activity;
 
 import android.content.Intent;
 import android.media.AudioManager;
@@ -11,15 +11,14 @@ import android.provider.Settings;
 import android.annotation.TargetApi;
 import android.util.Log;
 
-import com.audiofetch.aflib.uil.activity.base.ActivityBase;
-import com.audiofetch.aflib.uil.fragment.PlayerFragment;
-import com.audiofetch.aflib.bll.app.ApplicationBase;
+import com.audiofetch.afsdksample.uil.activity.base.ActivityBase;
+import com.audiofetch.afsdksample.uil.fragment.PlayerFragment;
+import com.audiofetch.afsdksample.bll.app.ApplicationBase;
 
 // Audiofetch API
 import com.audiofetch.afaudiolib.bll.app.AFAudioService;
 import com.audiofetch.afaudiolib.api.AfApi;
-import com.audiofetch.afaudiolib.api.ApiMessenger;
-import io.reactivex.Flowable;
+
 import io.reactivex.android.schedulers.AndroidSchedulers;
 
 

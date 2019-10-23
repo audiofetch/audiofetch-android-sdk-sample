@@ -1,4 +1,4 @@
-package com.audiofetch.aflib.uil.activity;
+package com.audiofetch.afsdksample.uil.activity;
 
 import android.annotation.TargetApi;
 import android.app.Activity;

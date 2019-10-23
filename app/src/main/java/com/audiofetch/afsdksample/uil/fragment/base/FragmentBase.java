@@ -1,4 +1,4 @@
-package com.audiofetch.aflib.uil.fragment.base;
+package com.audiofetch.afsdksample.uil.fragment.base;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -7,7 +7,7 @@ import android.os.Build;
 import android.support.annotation.ColorRes;
 import android.view.View;
 
-import com.audiofetch.aflib.uil.activity.MainActivity;
+import com.audiofetch.afsdksample.uil.activity.MainActivity;
 
 /**
  * Base class for all fragments to make switching between support and android.app.Fragment simplified

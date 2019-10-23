@@ -1,4 +1,4 @@
-package com.audiofetch.aflib.uil.adapter;
+package com.audiofetch.afsdksample.uil.adapter;
 
 import android.content.Context;
 import android.graphics.Typeface;
@@ -11,8 +11,8 @@ import android.widget.BaseAdapter;
 
 import com.audiofetch.afaudiolib.bll.helpers.LG;
 import com.audiofetch.afaudiolib.dal.Channel;
-import com.audiofetch.aflib.R;
-import com.audiofetch.aflib.uil.fragment.PlayerFragment;
+import com.audiofetch.afsdksample.R;
+import com.audiofetch.afsdksample.uil.fragment.PlayerFragment;
 
 import java.util.ArrayList;
 import java.util.List;

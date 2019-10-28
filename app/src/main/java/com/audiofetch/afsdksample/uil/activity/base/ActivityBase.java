@@ -208,8 +208,7 @@ public class ActivityBase extends Activity {
     }
 
     /**
-     * Returns a service connection to the AFAudioService, and "wires-up" mAFAudioSvc to point
-     * to the AFAudioService class instance.
+     * Starts the Audiofetch Service and returns a reference to it.
      *
      * @see AFAudioService
      * @return
@@ -228,8 +227,6 @@ public class ActivityBase extends Activity {
                             Context ctx = getApplicationContext();
                             // app context must be set before initing audio subsystem
                             AFAudioService.api().setAppContext( getApplicationContext() );
-                            //bye AFAudioService.api().inMsgs().send( new AfApi.InitAudioSubsystemMsg() );
-                            LG.Debug(TAG, "initAudioSubsystem");
                             AFAudioService.api().initAudioSubsystem();
 
                             mIsAFAudioSvcBound = true;
@@ -242,9 +239,7 @@ public class ActivityBase extends Activity {
                                 }
                             });
 
-
-                            LG.Debug(TAG, "In and out API connected.");
-                        
+                            LG.Debug(TAG, "AudioFetch Service In and out API connected.");
                             doSubscriptions();
                         }
                     }

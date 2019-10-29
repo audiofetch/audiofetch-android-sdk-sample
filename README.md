@@ -1,7 +1,7 @@
-AudioFetch Android SDK Sample App
-=================================
+AudioFetch Android SDK Sample App v2
+====================================
 
-This is an example of how to use the AudioFetch SDK to integrage the Autiofetch service into your app.
+This is an example of how to use the AudioFetch SDK v2 to integrate the AutioFetch service into your app.
 
 The AudioFetch SDK provides your application with a service that enables discovery of AudioFetch APB's, connection of audio streams, selection of channels and start/stop audio functionality.
 

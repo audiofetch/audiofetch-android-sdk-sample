@@ -366,7 +366,8 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                     if (!mChannels.isEmpty()) {
                         mChannels.clear();
                     }
-                    mChannels.addAll(msg.getApbChannels());
+                    //bye mChannels.addAll(msg.getApbChannels());
+                    mChannels.addAll(Channel.AllChannels);
                 } else if (msg.getChannels().size() > 0) {
                     mChannelsLoaded = false;
                     if (!mChannelIntegerList.isEmpty()) {
@@ -381,6 +382,11 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                         mChannels.add(new Channel(i.intValue(), i.intValue() + 1, String.format("%d", i.intValue() + 1)));
                     }
                 }
+
+                // Set the initial channel to 0, which will also initially
+                // connect to an apb.
+                mCurrentChannel = 0;
+                AFAudioService.api().inMsgs().send(new AfApi.SetChannelMsg( mCurrentChannel ) );
 
                 // Now that we have channels, start the audio.
                 mUiHandler.postDelayed(new Runnable() {

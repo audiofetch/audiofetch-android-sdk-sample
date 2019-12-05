@@ -3,8 +3,8 @@ apply plugin: 'com.android.application'
 import com.android.build.OutputFile
 
 String APP_PACKAGE_NAME = 'com.audiofetch.afsdksample'
-String VERSION_NAME = '1.0.14'
-int VERSION_CODE = 14
+String VERSION_NAME = '1.1.0'
+int VERSION_CODE = 15
 
 /**
  * Set this to true to create two separate APKs instead of one:

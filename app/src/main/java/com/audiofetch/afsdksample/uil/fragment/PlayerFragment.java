@@ -180,11 +180,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
 
     @Override
     public void onStop() {
-        //mcj if (mIsBusRegistered) {
-            // remove any possible pending callbacks
-            // mcj MainActivity.getBus().unregister(this);
-            //mcj mIsBusRegistered = false;
-        //mcj }
         super.onStop();
     }
 
@@ -366,7 +361,6 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
                     if (!mChannels.isEmpty()) {
                         mChannels.clear();
                     }
-                    //bye mChannels.addAll(msg.getApbChannels());
                     mChannels.addAll(Channel.AllChannels);
                 } else if (msg.getChannels().size() > 0) {
                     mChannelsLoaded = false;
@@ -385,7 +379,21 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
 
                 // Set the initial channel to 0, which will also initially
                 // connect to an apb.
+                
                 mCurrentChannel = 0;
+
+
+                Channel ch0 = Channel.FindChannelForChannelNum(0);
+
+                // No box A? Take the serial from the first channel's box
+                if (ch0 == null) {
+                    ch0 = Channel.AllChannels.get(0);
+                }
+
+                if (ch0 != null) {
+                    mCurrentChannel = ch0.channel;
+                }
+
                 AFAudioService.api().inMsgs().send(new AfApi.SetChannelMsg( mCurrentChannel ) );
 
                 // Now that we have channels, start the audio.

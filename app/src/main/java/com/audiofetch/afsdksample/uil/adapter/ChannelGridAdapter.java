@@ -192,7 +192,19 @@ public class ChannelGridAdapter extends BaseAdapter {
      * @return ChannelGridAdapter
      */
     public ChannelGridAdapter setChannels(final List<Channel> channels) {
-        mApbChannels = (null != channels) ? channels : mApbChannels;
+        
+        if (channels.size() < 25) {
+            mApbChannels = (null != channels) ? channels : mApbChannels;
+        }
+        else {
+            // just the first 24 so we don't go past the bottom of the screen
+            mApbChannels = new ArrayList<>();
+            int i = 0;
+            while (i < 25) {
+                mApbChannels.add( channels.get(i) );
+                i += 1;
+            }
+        }
         return this;
     }
 

@@ -1,11 +1,18 @@
 AudioFetch Android SDK Sample App v2
 ====================================
 
-This is an example of how to use the AudioFetch SDK v2 to integrate the AutioFetch service into your app.
+#Overview
 
-The AudioFetch SDK provides your application with a service that enables discovery of AudioFetch APB's, connection of audio streams, selection of channels and start/stop audio functionality.
+The AudioFetch Android SDK allows AudioFetch partner companies to add real-time, low latency streaming audio capability to their own Android App. The SDK takes the form of an Android library that may be linked against. An example application showing how to use the SDK is also provided.
 
-The AudioFetch service presents an API that accepts commands and emits outgoing messages as things happen. Once the service is started, you can do things like:
+The SDK starts a service within a host application, and provides an API to send messages to and from that service to control what the AudioFetch Service is doing, and to be notified of AudioFetch Service state changes and events.
+
+The API is implemented using RxJava to implement two message streams: incoming and outgoing. The incoming message api sends messages to the AudioFetch service such as: StartAudioMsg, StartDiscoveryMsg, etc. The outgoing message api sends messages to the host application such as: ChannelsReceivedMsg.
+
+The use of RxJava to implement the API allows decoupling of the host application architecture from the AudioFetch SDK. Additionally RxJava allows easy use of multi-threading if desired and other potential publish/subscribe architecture advantages, should the host application desire to take advantage of them.
+
+For commands to the AudioFetch service, convenience wrapper functions are provided so that you may easily send messages to the AudioFetch service:
+
 
     AFAudioService.api().startAudio()
     AFAudioService.api().stopAudio()
@@ -51,15 +58,24 @@ These messages are published on an outgoing message bus, implemented in RxJava. 
             });
 
 
+The AudioFetch service does not make any assumptions about your application structure, but provides a foreground service to your application that processes the realtime audio, and also discovers AudioFetch boxes. The use of RxJava in the API means you have flexibility on how you handle in and out commands in any multi-threading manner you wish.
+
 Note that volume is not handled in the Audiofetch Service, but is the responsibility of the application to manage, if desired. The sample application contains a volume slider that enables user control of volume.
 
 
+#Discovery Process
+
+Discovery of AudioFetch boxes is initiated on startup when initAudioSubsystem() is called. This discovery typically lasts for up to 10 seconds, and automatically stops when complete and results in a ChannelsReceivedMsg being sent from the serivce to the app with appropriate channel information about any AudioFetch boxes that were discovered.
+
+After this time period, a call to startDiscovery() will re-initiate this process. During the discovery process, a call to stopDiscovery() will abort the discovery process.
 
 
-Steps To Integrate The AudioFetch SDK Into Your App
+
+#Steps To Integrate The AudioFetch SDK Into Your App
 
 1. Add Packages and AudioFetch library to build.gradle
 
+````
     dependencies {
         
         ... your dependencies
@@ -73,10 +89,12 @@ Steps To Integrate The AudioFetch SDK Into Your App
         implementation(name: 'afaudiolib', ext: 'aar')
 
     }
+````
 
 
 2. Add AudioFetch Service to ApplicationManifest.xml
 
+````
     <service android:name="com.audiofetch.afaudiolib.bll.app.AFAudioService"
         android:stopWithTask="true"
         android:singleUser="true"
@@ -92,10 +110,11 @@ Steps To Integrate The AudioFetch SDK Into Your App
             <category android:name="android.intent.category.DEFAULT" />
         </intent-filter>
     </service>
-
+````
 
 3. Add Permissions to ApplicationManifest.xml
 
+````
     <permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
 
     <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
@@ -114,11 +133,12 @@ Steps To Integrate The AudioFetch SDK Into Your App
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="com.samsung.android.sdk.professionalaudio.permission.START_MONITOR_SERVICE"/>
-    <uses-permission android:name="com.samsung.android.providers.context.permission.WRITE_USE_APP_FEATURE_SURVEY" />
-
+    <uses-permission android:name="com.samsung.android.providers.context.permission.WRITE_USE_APP_FEATURE_SURVEY" />`
+````
 
 4. Start the AudioFetch Service
 
+````
     protected ActivityBase startAFAudioService() {
         if (null == mAFAudioSvc) {
             final Intent serviceIntent = new Intent(this, AFAudioService.class);
@@ -177,10 +197,11 @@ Steps To Integrate The AudioFetch SDK Into Your App
         }
         return mAFAudioSvcConn;
     }
-
+````
 
 5. Subscribe to outgoing API messages from the AudioFetch Service
 
+````
     AFAudioService.api().outMsgs()
         .asFlowable()
         .observeOn(AndroidSchedulers.mainThread())
@@ -206,10 +227,11 @@ Steps To Integrate The AudioFetch SDK Into Your App
               }
 
             });
-
+````
 
 6. Send commands to the AudioFetch Service
 
+````
     AFAudioService.api().startAudio()
     AFAudioService.api().stopAudio()
 
@@ -217,6 +239,37 @@ Steps To Integrate The AudioFetch SDK Into Your App
 
     AFAudioService.api().startDiscovery()
     AFAudioService.api().stopDiscovery()
+````
+
+
+#AudioFetch API Details
+
+Incoming Messages and Convenience Wrapper Functions:
+
+
+
+| Message | Convenience Wrapper | Notes |
+| ------- | ------------------- | ----- |     
+| InitAudioSubsystemMsg | initAudioSubsystem() |   Init audio service on application create.|
+| DestroyAudioSubsystemMsg  |  destroyAudioSubsystem() | Destroy audio service on application destroy. |
+| SetChannelMsg |  setChannel() |   Set the channel to a channel number. |
+| StartAudioMsg |  startAudio() |   Start audio playback. |
+| StopAudioMsg  |  stopAudio()  | Stop audio playback. |
+| StartDiscoveryMsg   startDiscovery()  |   Start or restart discovery of AudioFetch boxes. |
+| StopDiscoveryMsg    stopDiscovery()   | Stop any ongoing discovery of AudioFetch boxes. |
+
+
+
+Outgoing Messages:
+
+| Message | Notes |
+| ------- | ----- |
+| ChannelsReceivedMsg | Sent after AudioFetch boxes are discovered, contains a list of available channels. |
+| AudioStateMsg       | Sent when audio state changes. For details, see sample application. |
+| WifiStatusMsg       | Sent when WiFi status changes, eg when WiFi connectivity is lost or gained. |
+| HeadsetMsg          | Sent when the headset is plugged in or unplugged. |
+| AudioFocusMsg       | Sent when the Android system audio focus changes. |
+
 
 
 

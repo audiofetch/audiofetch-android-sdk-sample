@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/audiofetch-android-sdk-sample.iml" filepath="$PROJECT_DIR$/audiofetch-android-sdk-sample.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/audiofetch-android-sdk-sample.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/audiofetch-android-sdk-sample.app.iml" />
     </modules>
   </component>
 </project>

@@ -1,6 +1,8 @@
 # AudioFetch Android SDK Sample App v2
 
-## Overview
+##### Note: v2.2.0 RC1 is undergoing internal testing, bugfix changes may occur before final release.
+
+# Overview
 
 The AudioFetch Android SDK allows AudioFetch partner companies to add real-time, low latency streaming audio capability to their own Android App. The SDK takes the form of an Android library that may be linked against. An example application showing how to use the SDK is also provided.
 
@@ -15,9 +17,9 @@ For commands to the AudioFetch service, convenience wrapper functions are provid
 
     AFAudioService.api().startAudio()
     AFAudioService.api().stopAudio()
-
+    
     AFAudioService.api().setChannel(1)
-
+    
     AFAudioService.api().startDiscovery()
     AFAudioService.api().stopDiscovery()
 
@@ -53,7 +55,7 @@ These messages are published on an outgoing message bus, implemented in RxJava. 
                     ab.finish();
                 }
               }
-
+    
             });
 
 
@@ -268,7 +270,6 @@ Outgoing Messages:
 | WifiStatusMsg       | Sent when WiFi status changes, eg when WiFi connectivity is lost or gained. |
 | HeadsetMsg          | Sent when the headset is plugged in or unplugged. |
 | AudioFocusMsg       | Sent when the Android system audio focus changes. |
-
 
 
 

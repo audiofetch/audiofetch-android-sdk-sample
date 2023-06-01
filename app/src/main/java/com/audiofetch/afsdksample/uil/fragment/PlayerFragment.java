@@ -42,6 +42,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import android.net.NetworkSpecifier;
+import android.net.NetworkRequest;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
+
+import android.net.wifi.WifiNetworkSpecifier;
+import android.net.ConnectivityManager.NetworkCallback;
+import android.net.Network;
+
 /**
  * Fragment that contains the player view
  */
@@ -420,6 +429,7 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
      * @param event
      */
     public void onWifiStatusMsg(final AfApi.WifiStatusMsg msg) {
+        LG.Info(TAG, "PlayerFragment got wifi status msg: %b %b", msg.enabled, msg.connected);
         if (!msg.enabled || !msg.connected) {
             try {
                 // FAILED TO CONNECTED TO WIFI
@@ -472,6 +482,10 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
             mLastVolume = ((mLastVolume + 1) <= mMaxVolume) ? ++mLastVolume : mMaxVolume;
             setVolume( (int) mLastVolume);
             handled = true;
+
+            // mcj test
+            this.autoConnectToWifi();
+
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
             mLastVolume = (float) ( ((mLastVolume - 1) > 0) ? --mLastVolume : 0 );
             setVolume( (int) mLastVolume);
@@ -496,6 +510,49 @@ public class PlayerFragment extends FragmentBase implements View.OnClickListener
             }
             mChannelsLoaded = true;
         }
+    }
+
+
+    public void autoConnectToWifi() {
+        final MainActivity ma = getMainActivity();
+        final Context context = ma.getApplicationContext();
+
+        final NetworkSpecifier specifier =
+          new WifiNetworkSpecifier.Builder()
+          //.setSsidPattern(new PatternMatcher("MoJo_GLI_5ghz", PatternMatcher.PATTERN_PREFIX))
+          //.setBssidPattern(MacAddress.fromString("10:03:23:00:00:00"), MacAddress.fromString("ff:ff:ff:00:00:00"))
+          .setSsid("MoJo_GLI_5ghz")
+          .setWpa2Passphrase("mocoffee")
+          .build();
+
+        final NetworkRequest request =
+          new NetworkRequest.Builder()
+          .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+          .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+          .setNetworkSpecifier(specifier)
+          .build();
+
+        final ConnectivityManager connectivityManager = (ConnectivityManager)
+          context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        final NetworkCallback networkCallback = new NetworkCallback() {
+          //...
+          @Override
+          public void onAvailable(Network network) {
+              // do success processing here..
+          }
+
+          @Override
+          public void onLost(Network network) {
+              // do failure processing here..
+          }
+          //...
+        };
+        connectivityManager.requestNetwork(request, networkCallback);
+        
+        ///...
+        // Release the request when done.
+        //connectivityManager.unregisterNetworkCallback(networkCallback);
     }
 
 

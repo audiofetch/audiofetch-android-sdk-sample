@@ -1,6 +1,12 @@
 # AudioFetch Android SDK Sample App v2
 
-##### Note: v2.2.0 RC1 is undergoing internal testing, bugfix changes may occur before final release.
+
+## New Android Requirments for targeting SDK 31 and above
+
+You must add a new permission to your manifest: NEARBY_WIFI_DEVICES.
+You must change the audiofetch service start so that it is a foreground service.
+See details below.
+
 
 # Overview
 
@@ -99,7 +105,7 @@ After this time period, a call to startDiscovery() will re-initiate this process
     <service android:name="com.audiofetch.afaudiolib.bll.app.AFAudioService"
         android:stopWithTask="true"
         android:singleUser="true"
-        android:exported="false"
+        android:exported="true"
         android:label="AudioFetch Music">
         <intent-filter>
             <action android:name="com.audiofetch.afaudiolib.bll.app.AFAudioService.NEXT"/>
@@ -114,6 +120,8 @@ After this time period, a call to startDiscovery() will re-initiate this process
 ````
 
 3. Add Permissions to ApplicationManifest.xml
+
+Note that API 33 added a new needed permission: NEARBY_WIFI_DEVICES. Not including this can affect unit discovery.
 
 ````
     <permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
@@ -132,18 +140,25 @@ After this time period, a call to startDiscovery() will re-initiate this process
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" 
+                     android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
+                     android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="com.samsung.android.sdk.professionalaudio.permission.START_MONITOR_SERVICE"/>
     <uses-permission android:name="com.samsung.android.providers.context.permission.WRITE_USE_APP_FEATURE_SURVEY" />`
 ````
 
 4. Start the AudioFetch Service
 
+Important: The AudioFetch service must be started as a foreground service. Long running background services get terminated by the system, typically after 5-10 minutes.
+
 ````
     protected ActivityBase startAFAudioService() {
         if (null == mAFAudioSvc) {
             final Intent serviceIntent = new Intent(this, AFAudioService.class);
-            startService(serviceIntent);
+            // Start audio service in as a foreground service
+            Context context = getApplicationContext();
+            context.startForegroundService(serviceIntent);
             bindService(new Intent(this, AFAudioService.class), getAFAudioServiceConnection(), 0);
         }
         return this;

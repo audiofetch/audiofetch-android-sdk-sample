@@ -17,9 +17,15 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" 
+                     android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
+                     android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="com.samsung.android.sdk.professionalaudio.permission.START_MONITOR_SERVICE"/>
     <uses-permission android:name="com.samsung.android.providers.context.permission.WRITE_USE_APP_FEATURE_SURVEY" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+
 
 
     <application
@@ -37,6 +43,7 @@
             android:screenOrientation="portrait"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize"
             android:largeHeap="true"
+            android:exported="true"
             android:allowClearUserData="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -64,13 +71,14 @@
             android:excludeFromRecents="true"
             android:taskAffinity=".MainActivity"
             android:noHistory="true"
-            android:theme="@android:style/Theme.NoDisplay" />
+             android:exported="true"
+           android:theme="@android:style/Theme.NoDisplay" />
 
         <!-- 20 or below -->
         <service android:name="com.audiofetch.afaudiolib.bll.app.AFAudioService"
             android:stopWithTask="true"
             android:singleUser="true"
-            android:exported="false"
+            android:exported="true"
             android:label="AudioFetch Music">
             <intent-filter>
                 <action android:name="com.audiofetch.afaudiolib.bll.app.AFAudioService.NEXT"/>

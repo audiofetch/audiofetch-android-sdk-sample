@@ -188,7 +188,9 @@ public class ActivityBase extends Activity {
     protected ActivityBase startAFAudioService() {
         if (null == mAFAudioSvc) {
             final Intent serviceIntent = new Intent(this, AFAudioService.class);
-            startService(serviceIntent);
+            // Start audio service in as a foreground service
+            Context context = getApplicationContext();
+            context.startForegroundService(serviceIntent);
             bindService(new Intent(this, AFAudioService.class), getAFAudioServiceConnection(), 0);
         }
         return this;

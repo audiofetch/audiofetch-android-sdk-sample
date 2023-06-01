@@ -3,8 +3,8 @@ apply plugin: 'com.android.application'
 import com.android.build.OutputFile
 
 String APP_PACKAGE_NAME = 'com.audiofetch.afsdksample'
-String VERSION_NAME = '1.1.0'
-int VERSION_CODE = 15
+String VERSION_NAME = '2.0.0'
+int VERSION_CODE = 16
 
 /**
  * Set this to true to create two separate APKs instead of one:
@@ -17,13 +17,12 @@ int VERSION_CODE = 15
 def enableSeparateBuildPerCPUArchitecture = false
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion '28.0.3'
+    compileSdkVersion 33
 
     defaultConfig {
         applicationId APP_PACKAGE_NAME
-        minSdkVersion 19
-        targetSdkVersion 28
+        minSdkVersion 26
+        targetSdkVersion 31
         versionCode VERSION_CODE
         versionName VERSION_NAME
         multiDexEnabled true
@@ -32,8 +31,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 
 

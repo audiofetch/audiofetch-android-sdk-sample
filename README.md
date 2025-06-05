@@ -1,3 +1,18 @@
+
+# Obselete
+
+This is the older version of the AudioFetch SDK sample and is obselete.
+
+For access to the new SDK, please contact: [support@audiofetch.com](mailto:support@audiofetch.com).
+
+The below is left for reference purposes, but should not be used for new development.
+
+
+
+------
+
+
+
 # AudioFetch Android SDK Sample App v2
 
 
